@@ -1,0 +1,8 @@
+{
+  "name": "prompt-vault",
+  "version": "1.0.0",
+  "description": "Phase-based conversation logging with context protection. Tracks user prompts, Claude actions, and results per phase. Auto-preserves progress across context compactions.",
+  "author": { "name": "etvibe" },
+  "keywords": ["logging", "phase", "context", "history", "session"],
+  "license": "MIT"
+}
