@@ -40,14 +40,14 @@ sudo apt install jq
 
 ### 1단계: 플러그인 설치
 
+**방법 1: Claude 플러그인 추가 (권장)**
 ```bash
-# 플러그인 클론
-cd ~/Downloads  # 또는 원하는 위치
-git clone https://github.com/lemon-etvibe/prompt-vault.git
+claude plugin add lemon-etvibe/prompt-vault
+```
 
-# 설치 확인
-ls prompt-vault/
-# 출력 예시: README.md, hooks/, scripts/, skills/, templates/, ...
+**방법 2: 수동 설치**
+```bash
+git clone https://github.com/lemon-etvibe/prompt-vault.git
 ```
 
 ### 2단계: 샘플 프로젝트 생성
@@ -57,8 +57,11 @@ ls prompt-vault/
 mkdir ~/tutorial-todo-app
 cd ~/tutorial-todo-app
 
-# 플러그인과 함께 Claude 시작
-claude --plugin-dir ~/Downloads/prompt-vault
+# Claude 시작 (방법 1로 설치했다면 바로 실행)
+claude
+
+# 방법 2로 설치했다면:
+# claude  # prompt-vault 플러그인이 자동 로드됨
 ```
 
 ### 3단계: 플러그인 로드 확인
@@ -66,12 +69,13 @@ claude --plugin-dir ~/Downloads/prompt-vault
 Claude가 시작되면 다음과 같은 메시지가 표시되어야 합니다:
 
 ```
-✓ Loaded plugin: prompt-vault (1.0.0)
-  Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status
+✓ Loaded plugin: prompt-vault (1.1.0)
+  Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status, /prompt-vault:report
 ```
 
 만약 표시되지 않는다면:
-- `--plugin-dir` 경로가 정확한지 확인
+- `claude plugin add`로 설치한 경우: `claude plugin list`로 설치 확인
+- 수동 설치의 경우: `--plugin-dir` 경로가 정확한지 확인
 - `prompt-vault/.claude-plugin/plugin.json` 파일이 존재하는지 확인
 
 ## 페이즈 1: 로깅 환경 초기화
@@ -470,13 +474,13 @@ Phase count: 3
 ```bash
 # 프로젝트 A
 cd ~/project-a
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault 플러그인이 자동 로드됨
 /prompt-vault:init
 [작업...]
 
 # 프로젝트 B (독립적인 로그)
 cd ~/project-b
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault 플러그인이 자동 로드됨
 /prompt-vault:init
 [작업...]
 ```
@@ -664,7 +668,7 @@ cat .local/logs/.config
 
 ```bash
 cd ~/my-real-project
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault 플러그인이 자동 로드됨
 /prompt-vault:init
 [실제 작업 시작]
 ```

@@ -40,14 +40,14 @@ sudo apt install jq
 
 ### Step 1: Install the Plugin
 
+**Method 1: Claude Plugin Add (Recommended)**
 ```bash
-# Clone the plugin
-cd ~/Downloads  # or your preferred location
-git clone https://github.com/lemon-etvibe/prompt-vault.git
+claude plugin add lemon-etvibe/prompt-vault
+```
 
-# Verify installation
-ls prompt-vault/
-# Expected output: README.md, hooks/, scripts/, skills/, templates/, ...
+**Method 2: Manual Installation**
+```bash
+git clone https://github.com/lemon-etvibe/prompt-vault.git
 ```
 
 ### Step 2: Create a Sample Project
@@ -57,8 +57,11 @@ ls prompt-vault/
 mkdir ~/tutorial-todo-app
 cd ~/tutorial-todo-app
 
-# Start Claude with the plugin
-claude --plugin-dir ~/Downloads/prompt-vault
+# Start Claude (if installed via Method 1, just run)
+claude
+
+# If installed via Method 2:
+# claude  # prompt-vault plugin auto-loaded
 ```
 
 ### Step 3: Verify Plugin Loaded
@@ -66,12 +69,13 @@ claude --plugin-dir ~/Downloads/prompt-vault
 When Claude starts, you should see the following message:
 
 ```
-✓ Loaded plugin: prompt-vault (1.0.0)
-  Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status
+✓ Loaded plugin: prompt-vault (1.1.0)
+  Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status, /prompt-vault:report
 ```
 
 If not displayed:
-- Check that `--plugin-dir` path is correct
+- If installed via `claude plugin add`: verify with `claude plugin list`
+- If manual install: check that `--plugin-dir` path is correct
 - Verify `prompt-vault/.claude-plugin/plugin.json` file exists
 
 ## Phase 1: Initialize Logging Environment
@@ -470,13 +474,13 @@ Phase count: 3
 ```bash
 # Project A
 cd ~/project-a
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault plugin auto-loaded
 /prompt-vault:init
 [Work...]
 
 # Project B (independent logs)
 cd ~/project-b
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault plugin auto-loaded
 /prompt-vault:init
 [Work...]
 ```
@@ -692,7 +696,7 @@ Try using the plugin in a real project:
 
 ```bash
 cd ~/my-real-project
-claude --plugin-dir ~/Downloads/prompt-vault
+claude  # prompt-vault plugin auto-loaded
 /prompt-vault:init
 [Start your actual work]
 ```
