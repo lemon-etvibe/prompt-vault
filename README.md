@@ -47,6 +47,13 @@ prompt-vault는 **훅(Hook) 기반 자동 복구**와 **페이즈 단위 구조�
 - **SessionStart 훅**: 압축 후 세션 재시작 시 `_index.md` + 최신 페이즈 로그를 Claude에게 자동 주입
 - 진행 상태를 잃지 않고 작업 연속성 보장
 
+### 📊 HTML 리포트 시각화
+- `/prompt-vault:report`로 페이즈 로그를 시각적 HTML 리포트로 변환
+- **요약 대시보드**: 타임라인, 통계 카드, 페이즈 인덱스 테이블
+- **상세 로그 뷰**: 채팅 버블 UI로 사용자 프롬프트 ↔ Claude 응답 표시
+- Coolors 기반 5색 팔레트로 프로젝트별 고유한 디자인
+- 순수 정적 HTML — 브라우저만 있으면 열람 가능
+
 ### 🔒 Git 안전 저장
 - 모든 로그는 프로젝트의 `.local/logs/` 디렉토리에 저장
 - 초기화 시 `.gitignore`에 `.local/` 자동 추가
@@ -156,6 +163,29 @@ claude --plugin-dir /path/to/prompt-vault
 /prompt-vault:log "데이터베이스 스키마 설계"
 ```
 
+### `/prompt-vault:report [summary|detail|all|custom]`
+
+**목적**: 페이즈 로그를 시각화된 HTML 리포트로 변환
+
+**동작**:
+- `scripts/generate-report.sh` 실행 (토큰 비용 제로)
+- `.local/logs/report-summary.html` — 프로젝트 요약 대시보드
+- `.local/logs/report-detail.html` — 페이즈별 상세 채팅 로그
+
+**인자**:
+- `summary`: 요약 대시보드만
+- `detail`: 상세 로그 뷰만
+- `all` (기본): 둘 다
+- `custom`: Claude가 커스텀 리포트 생성
+
+**예시**:
+```bash
+/prompt-vault:report           # 기본 리포트 생성
+/prompt-vault:report summary   # 요약만
+/prompt-vault:report custom    # 커스텀 (추가 요청 반영)
+open .local/logs/report-summary.html  # 브라우저에서 열기
+```
+
 ### `/prompt-vault:status`
 
 **목적**: 페이즈 진행 상황 요약 표시
@@ -246,7 +276,9 @@ your-project/
 │       ├── _index.md        # 페이즈 인덱스 테이블
 │       ├── phase-001.md     # 첫 번째 페이즈 로그
 │       ├── phase-002.md     # 두 번째 페이즈 로그
-│       └── compaction.log   # 자동 압축 이력 (감사 추적)
+│       ├── compaction.log   # 자동 압축 이력 (감사 추적)
+│       ├── report-summary.html  # 프로젝트 요약 대시보드 (자동 생성)
+│       └── report-detail.html   # 페이즈별 상세 채팅 로그 (자동 생성)
 ├── .gitignore               # .local/ 추가됨 (이미 있으면 병합)
 └── CLAUDE.md                # Phase Logging Protocol 섹션 추가됨
 ```
@@ -262,7 +294,10 @@ your-project/
   "model": "claude-opus-4-6",
   "context_window_tokens": 200000,
   "warn_percent": 80,
-  "warn_bytes": 640000
+  "warn_bytes": 640000,
+  "project_name": "My Project",
+  "project_description": "프로젝트 설명",
+  "palette": ["#264653", "#2A9D8F", "#E9C46A", "#F4A261", "#E76F51"]
 }
 ```
 
@@ -271,6 +306,9 @@ your-project/
 - `context_window_tokens`: 모델의 컨텍스트 윈도우 크기 (토큰 수)
 - `warn_percent`: 경고 발생 임계값 (퍼센트)
 - `warn_bytes`: 경고 발생 임계값 (transcript 바이트 수)
+- `project_name`: 리포트 제목에 사용 (기본: 디렉토리명)
+- `project_description`: 리포트 부제목 (기본: 빈 문자열)
+- `palette`: 5색 팔레트 배열 — [primary, secondary, accent, surface, muted]
 
 ### 모델별 권장 임계값
 

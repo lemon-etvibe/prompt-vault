@@ -23,6 +23,11 @@
 | `templates/phase.md` | 페이즈 로그 작성 템플릿 |
 | `templates/index.md` | _index.md 초기 템플릿 |
 | `templates/claude-md-snippet.md` | 대상 프로젝트 CLAUDE.md에 삽입할 로깅 프로토콜 |
+| `skills/report/SKILL.md` | `/prompt-vault:report` — 페이즈 로그를 HTML 리포트로 시각화 |
+| `scripts/generate-report.sh` | 리포트 생성 셸 스크립트 (토큰 비용 제로) |
+| `templates/report-summary.html` | 요약 대시보드 HTML 템플릿 |
+| `templates/report-detail.html` | 상세 채팅 로그 HTML 템플릿 |
+| `data/palettes.json` | Coolors 기반 큐레이션 5색 팔레트 세트 |
 
 ## 대상 프로젝트에 생성되는 구조
 
@@ -34,7 +39,9 @@ project/
 │       ├── _index.md        # 페이즈 인덱스 테이블
 │       ├── phase-001.md     # 각 페이즈 로그
 │       ├── phase-002.md
-│       └── compaction.log   # 자동 압축 이력
+│       ├── compaction.log   # 자동 압축 이력
+│       ├── report-summary.html  # 요약 대시보드 (자동 생성)
+│       └── report-detail.html   # 상세 채팅 로그 (자동 생성)
 ├── .gitignore               # .local/ 추가됨
 └── CLAUDE.md                # 로깅 프로토콜 섹션 추가됨
 ```
@@ -53,6 +60,5 @@ claude --plugin-dir /path/to/prompt-vault
 ```
 
 ## 현재 상태
-- v1.0.0 초기 구현 완료
+- v1.1.0 HTML 리포팅 기능 추가
 - GitHub: https://github.com/lemon-etvibe/prompt-vault
-- 상세 사용 가이드(README) 보강 필요

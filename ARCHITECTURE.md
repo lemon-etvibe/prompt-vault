@@ -70,6 +70,8 @@ prompt-vault/
 | `scripts/*.sh` | 훅 구현 스크립트 (Bash) | `hooks.json`에서 `command`로 참조 |
 | `skills/*/SKILL.md` | 스킬 정의 및 프롬프트 | 사용자가 `/prompt-vault:*` 실행 시 Claude에게 주입 |
 | `templates/*.md` | 마크다운 템플릿 파일 | `init`, `log` 스킬에서 파일 생성 시 사용 |
+| `templates/*.html` | HTML 리포트 템플릿 | `generate-report.sh`에서 플레이스홀더 치환 |
+| `data/palettes.json` | 큐레이션 5색 팔레트 세트 | `init` 스킬에서 랜덤 선택 (API fallback) |
 
 ### 파일 크기 및 복잡도
 
@@ -83,6 +85,11 @@ prompt-vault/
 | `init/SKILL.md` | 44 | 중간 | 6단계 초기화 절차 |
 | `log/SKILL.md` | 47 | 높음 | 번호 매김, 파일 생성, 인덱스 업데이트 |
 | `status/SKILL.md` | 9 | 낮음 | 단순 읽기 작업 |
+| `report/SKILL.md` | ~80 | 중간 | 리포트 생성 (스크립트 + 커스텀) |
+| `generate-report.sh` | ~200 | 높음 | awk 파싱, head/tail 치환, HTML 조립 |
+| `report-summary.html` | ~170 | 중간 | 요약 대시보드 템플릿 |
+| `report-detail.html` | ~200 | 중간 | 상세 채팅 로그 템플릿 |
+| `palettes.json` | ~15 | 낮음 | 5색 팔레트 JSON 배열 |
 
 ## 핵심 구성 요소
 
@@ -469,6 +476,43 @@ Claude가 프롬프트 처리 시 `${CLAUDE_PLUGIN_ROOT}`를 플러그인 경로
 
 Total: 2 phases completed
 ```
+
+### /prompt-vault:report
+
+**목적**: 페이즈 로그를 시각화된 HTML 리포트로 변환
+
+**듀얼 트랙 아키텍처**:
+
+```
+트랙 1 (기본): 셸 스크립트 — 토큰 비용 제로
+  /prompt-vault:report → scripts/generate-report.sh → HTML 파일 생성
+
+트랙 2 (커스텀): Claude 모델 호출
+  /prompt-vault:report custom → 기본 리포트 + Claude 보강
+```
+
+**generate-report.sh 핵심 로직**:
+
+1. **설정 읽기**: `jq`로 `.config`에서 `project_name`, `palette` 등 읽기
+2. **_index.md 파싱**: `awk`로 테이블 행 추출, HTML `<tr>` 및 타임라인 카드 조립
+3. **phase-*.md 파싱**: `awk` 범위 패턴(`/^## Section$/,/^## [A-Z]/`)으로 멀티라인 섹션 추출
+4. **템플릿 치환**:
+   - 단순 플레이스홀더(`{{PROJECT_NAME}}` 등): `sed`로 한 줄 치환
+   - 반복 구간(`{{PHASE_TABLE}}` 등): `head/tail` 분할 + `cat` 조립 (역순 치환)
+
+**파서 선택 근거**:
+- `awk`: 멀티라인 섹션 파싱 (sed의 범위 패턴 edge case 회피)
+- `jq`: JSON 설정 읽기 (기존 훅과 동일)
+- `head/tail + cat`: 템플릿 치환 (sed 멀티라인보다 안정적)
+
+**생성되는 파일**:
+- `.local/logs/report-summary.html` — 프로젝트 요약 대시보드 (타임라인, 통계, 인덱스)
+- `.local/logs/report-detail.html` — 페이즈별 채팅 버블 UI (프롬프트/응답/결정)
+
+**5색 팔레트 시스템**:
+- `.config.palette` 배열에서 5색 읽기 → CSS 변수 `--color-primary` ~ `--color-muted`로 주입
+- 팔레트 소스: init 시 colormind.io API 호출 (fallback: `data/palettes.json`)
+- 레이아웃: Tailwind CSS gray 스케일 + 5색 팔레트 포인트
 
 ## 데이터 흐름
 
@@ -1067,9 +1111,18 @@ Closes #42
 - PDF 내보내기 미지원
 - Git 자동 커밋 미지원
 
+### v1.1.0 (2026-02-26)
+
+**HTML 리포팅 기능 추가**:
+- ✅ `/prompt-vault:report` 스킬 (summary/detail/all/custom)
+- ✅ `generate-report.sh` 셸 스크립트 (토큰 비용 제로)
+- ✅ 요약 대시보드 + 상세 채팅 로그 HTML 템플릿
+- ✅ Coolors 기반 5색 팔레트 시스템 (colormind.io API + fallback)
+- ✅ `.config` 확장: `project_name`, `project_description`, `palette`
+- ✅ `init` 스킬 업데이트: 프로젝트 메타 + 랜덤 팔레트 배정
+
 **향후 계획**:
-- v1.1.0: `/prompt-vault:search` 스킬
-- v1.2.0: `/prompt-vault:export` 스킬
+- v1.2.0: PreCompact 훅 리포트 자동 갱신, 출력 경로 커스터마이징
 - v2.0.0: 다중 사용자 협업 기능
 
 ## 참조

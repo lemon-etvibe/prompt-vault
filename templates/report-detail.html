@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PROJECT_NAME}} — Phase Detail Log</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: {{COLOR_1}};
+      --color-secondary: {{COLOR_2}};
+      --color-accent: {{COLOR_3}};
+      --color-surface: {{COLOR_4}};
+      --color-muted: {{COLOR_5}};
+    }
+    * { font-family: 'Noto Sans KR', sans-serif; }
+    body { background: #F9FAFB; color: #1F2937; }
+    code, .code-inline {
+      font-family: 'JetBrains Mono', monospace;
+      background: #1E293B;
+      color: #E2E8F0;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Phase Navigation */
+    .phase-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .phase-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6B7280;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .phase-nav a:hover { background: #F3F4F6; color: #1F2937; }
+    .phase-nav a .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: white;
+      background: var(--color-primary);
+    }
+
+    /* Chat Bubbles */
+    .chat-user {
+      background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%);
+      border: 1px solid #BFDBFE;
+      border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+      max-width: 85%;
+      position: relative;
+    }
+    .chat-ai {
+      background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+      border: 1px solid #E5E7EB;
+      border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+      max-width: 92%;
+      position: relative;
+    }
+
+    /* Phase Header */
+    .phase-header {
+      position: relative;
+      overflow: hidden;
+      border-radius: 1rem;
+      background: white;
+      border: 1px solid #E5E7EB;
+    }
+    .phase-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    }
+
+    /* Step Card */
+    .step-card {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 1rem;
+      transition: all 0.2s ease;
+    }
+    .step-card:hover { border-color: #D1D5DB; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+    details summary { cursor: pointer; list-style: none; position: relative; padding-left: 1.25rem; }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before {
+      content: '>';
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+      color: #9CA3AF;
+      transition: transform 0.2s ease;
+      font-size: 0.875rem;
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+
+    /* Thread Line */
+    .thread-line {
+      position: absolute;
+      left: 1.75rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #E5E7EB, transparent);
+    }
+
+    /* Tool Badge */
+    .tool-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #F3F4F6;
+      color: #6B7280;
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .status-done { background: #D1FAE5; color: #065F46; }
+    .status-in-progress { background: #DBEAFE; color: #1E40AF; }
+
+    /* Next Step Card */
+    .next-card {
+      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+      border: 1px dashed var(--color-accent);
+      border-radius: 0.75rem;
+    }
+
+    /* Scroll Animation */
+    .phase-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+    .phase-section.animate-in { opacity: 1; transform: translateY(0); }
+
+    /* Stats Pill */
+    .stats-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: white;
+      border: 1px solid #E5E7EB;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      color: #6B7280;
+    }
+  </style>
+</head>
+<body>
+  <!-- Phase Navigation -->
+  <nav class="phase-nav py-2 px-4">
+    <div class="max-w-5xl mx-auto flex items-center gap-2 overflow-x-auto">
+      <a href="report-summary.html" class="text-sm font-bold text-gray-800 mr-2 flex-shrink-0 hover:text-gray-500 transition" style="text-decoration: none;" title="Summary Dashboard">
+        &larr; {{PROJECT_NAME}}
+      </a>
+      <span class="text-gray-300 mr-2 flex-shrink-0">|</span>
+{{PHASE_NAV}}
+    </div>
+  </nav>
+
+  <!-- Phase Sections -->
+  <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+{{PHASE_SECTIONS}}
+
+    <!-- Empty State (shown when no phases) -->
+    <div id="empty-state" class="text-center py-20" style="display: none;">
+      <div class="text-6xl mb-4">📋</div>
+      <h2 class="text-xl font-bold text-gray-400 mb-2">아직 로그가 없습니다</h2>
+      <p class="text-gray-400 text-sm">
+        <code class="code-inline">/prompt-vault:log</code> 스킬로 첫 페이즈를 기록해보세요.
+      </p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 py-8 mt-16">
+    <div class="max-w-5xl mx-auto px-6 text-center">
+      <p class="text-gray-500 text-sm">
+        {{PROJECT_NAME}} &mdash; Generated by
+        <a href="https://github.com/lemon-etvibe/prompt-vault" class="text-gray-400 hover:text-white transition">prompt-vault</a>
+      </p>
+      <p class="text-gray-600 text-xs mt-2">{{GENERATED_AT}}</p>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.phase-section').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Show empty state if no phases
+    const sections = document.querySelectorAll('.phase-section');
+    const emptyState = document.getElementById('empty-state');
+    if (sections.length === 0 && emptyState) {
+      emptyState.style.display = 'block';
+    }
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('.phase-nav a[href^="#"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
