@@ -79,6 +79,14 @@ prompt-vault solves these problems with **hook-based automatic recovery** and **
 
 ## Installation
 
+### Method 1: Claude Plugin Add (Recommended)
+
+```bash
+claude plugin add lemon-etvibe/prompt-vault
+```
+
+### Method 2: Manual Installation
+
 ```bash
 # 1. Clone the plugin
 git clone https://github.com/lemon-etvibe/prompt-vault.git

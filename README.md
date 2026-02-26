@@ -79,6 +79,14 @@ prompt-vault는 **훅(Hook) 기반 자동 복구**와 **페이즈 단위 구조�
 
 ## 설치
 
+### 방법 1: Claude 플러그인 추가 (권장)
+
+```bash
+claude plugin add lemon-etvibe/prompt-vault
+```
+
+### 방법 2: 수동 설치
+
 ```bash
 # 1. 플러그인 클론
 git clone https://github.com/lemon-etvibe/prompt-vault.git
