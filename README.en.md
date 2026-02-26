@@ -80,12 +80,25 @@ prompt-vault solves these problems with **hook-based automatic recovery** and **
 ## Installation
 
 ```bash
-# 1. Clone the plugin
-git clone https://github.com/lemon-etvibe/prompt-vault.git
+# 1. Add marketplace (one-time setup)
+claude plugin marketplace add https://github.com/lemon-etvibe/prompt-vault
 
-# 2. Run Claude with the plugin directory
+# 2. Install the plugin
+claude plugin install prompt-vault@prompt-vault
+
+# 3. Use in your project
+cd ~/your-project && claude
+```
+
+<details>
+<summary>Manual installation (without marketplace)</summary>
+
+```bash
+git clone https://github.com/lemon-etvibe/prompt-vault.git
 claude --plugin-dir /path/to/prompt-vault
 ```
+
+</details>
 
 ## Quick Start (5 minutes)
 

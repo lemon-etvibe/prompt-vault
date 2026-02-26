@@ -41,14 +41,14 @@ sudo apt install jq
 ### Step 1: Install the Plugin
 
 ```bash
-# Clone the plugin
-cd ~/Downloads  # or your preferred location
-git clone https://github.com/lemon-etvibe/prompt-vault.git
+# Add marketplace (one-time setup)
+claude plugin marketplace add https://github.com/lemon-etvibe/prompt-vault
 
-# Verify installation
-ls prompt-vault/
-# Expected output: README.md, hooks/, scripts/, skills/, templates/, ...
+# Install the plugin
+claude plugin install prompt-vault@prompt-vault
 ```
+
+> **Manual install**: `git clone https://github.com/lemon-etvibe/prompt-vault.git` then `claude --plugin-dir /path/to/prompt-vault`
 
 ### Step 2: Create a Sample Project
 
@@ -57,8 +57,8 @@ ls prompt-vault/
 mkdir ~/tutorial-todo-app
 cd ~/tutorial-todo-app
 
-# Start Claude with the plugin
-claude --plugin-dir ~/Downloads/prompt-vault
+# Start Claude (plugin auto-loaded)
+claude
 ```
 
 ### Step 3: Verify Plugin Loaded

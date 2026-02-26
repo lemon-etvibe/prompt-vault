@@ -1,0 +1,22 @@
+{
+  "name": "prompt-vault",
+  "owner": {
+    "name": "etvibe"
+  },
+  "metadata": {
+    "description": "Phase-based conversation logging with context protection and HTML reporting"
+  },
+  "plugins": [
+    {
+      "name": "prompt-vault",
+      "source": ".",
+      "description": "Phase-based conversation logging with context protection and HTML reporting",
+      "version": "1.1.0",
+      "author": {
+        "name": "etvibe"
+      },
+      "tags": ["logging", "context", "reporting", "phase"],
+      "category": "developer-tools"
+    }
+  ]
+}
