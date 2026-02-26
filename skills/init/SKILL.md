@@ -65,4 +65,12 @@ Set up the prompt-vault logging environment for a project.
    }
    ```
 
-7. Output initialization complete message — include generated palette preview
+7. Output initialization complete message — include generated palette preview and restart guide:
+
+   ```
+   ✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.
+   💡 Claude를 재시작하면 프로토콜이 자동 적용됩니다:
+      /exit → claude --continue
+   ```
+
+   Note: Use `--continue` flag to resume the session with CLAUDE.md changes applied.
