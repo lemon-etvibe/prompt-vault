@@ -40,14 +40,14 @@ sudo apt install jq
 
 ### Step 1: Install the Plugin
 
-**Method 1: Claude Plugin Add (Recommended)**
 ```bash
-claude plugin add lemon-etvibe/prompt-vault
-```
-
-**Method 2: Manual Installation**
-```bash
+# Clone the plugin
+cd ~/Downloads  # or your preferred location
 git clone https://github.com/lemon-etvibe/prompt-vault.git
+
+# Verify installation
+ls prompt-vault/
+# Expected output: README.md, hooks/, scripts/, skills/, templates/, ...
 ```
 
 ### Step 2: Create a Sample Project
@@ -57,11 +57,8 @@ git clone https://github.com/lemon-etvibe/prompt-vault.git
 mkdir ~/tutorial-todo-app
 cd ~/tutorial-todo-app
 
-# Start Claude (if installed via Method 1, just run)
-claude
-
-# If installed via Method 2:
-# claude  # prompt-vault plugin auto-loaded
+# Start Claude with the plugin
+claude --plugin-dir ~/Downloads/prompt-vault
 ```
 
 ### Step 3: Verify Plugin Loaded
@@ -74,8 +71,7 @@ When Claude starts, you should see the following message:
 ```
 
 If not displayed:
-- If installed via `claude plugin add`: verify with `claude plugin list`
-- If manual install: check that `--plugin-dir` path is correct
+- Check that `--plugin-dir` path is correct
 - Verify `prompt-vault/.claude-plugin/plugin.json` file exists
 
 ## Phase 1: Initialize Logging Environment
@@ -474,13 +470,13 @@ Phase count: 3
 ```bash
 # Project A
 cd ~/project-a
-claude  # prompt-vault plugin auto-loaded
+claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
 [Work...]
 
 # Project B (independent logs)
 cd ~/project-b
-claude  # prompt-vault plugin auto-loaded
+claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
 [Work...]
 ```
@@ -696,7 +692,7 @@ Try using the plugin in a real project:
 
 ```bash
 cd ~/my-real-project
-claude  # prompt-vault plugin auto-loaded
+claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
 [Start your actual work]
 ```
