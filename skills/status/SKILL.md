@@ -1,8 +1,8 @@
 ---
 name: status
-description: 현재 프로젝트의 페이즈 진행 상태를 보여준다.
+description: Show the current project's phase progress summary.
 disable-model-invocation: false
 ---
 
-`.local/logs/_index.md`를 읽어 현재까지의 페이즈 진행 상태를 요약 표시한다.
-파일이 없으면 `/prompt-vault:init`을 안내한다.
+Read `.local/logs/_index.md` and display a summary of phase progress.
+If the file does not exist, guide the user to run `/prompt-vault:init`.

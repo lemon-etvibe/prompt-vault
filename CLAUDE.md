@@ -1,64 +1,64 @@
 # prompt-vault — Claude Code Plugin
 
-## 개요
-프로젝트 진행 중 각 페이즈별 사용자 프롬프트와 Claude의 실행 결과를 체계적으로 기록하고, 컨텍스트 압축 시에도 진행 상태를 보존하는 Claude Code 플러그인.
+## Overview
+A Claude Code plugin that systematically logs user prompts and Claude's execution results for each phase during project development, preserving progress state even through context compactions.
 
-## 설계 철학
-- **프롬프트와 작업 이력을 안전하게 보관하는 금고(vault)** — 컨텍스트가 압축되어도 진행 상태를 지킨다
-- 모든 프로젝트에서 재사용 가능한 플러그인 형태
-- 로그는 프로젝트의 `.local/logs/`에 저장 (git 추적 제외)
+## Design Philosophy
+- **A vault that safely stores prompts and work history** — protects progress state even when context is compacted
+- Reusable plugin form for all projects
+- Logs stored in project's `.local/logs/` (excluded from git tracking)
 
-## 파일 구조 및 역할
+## File Structure and Roles
 
-| 파일 | 역할 |
+| File | Role |
 |------|------|
-| `.claude-plugin/plugin.json` | 플러그인 매니페스트 (이름, 버전, 설명) |
-| `skills/init/SKILL.md` | `/prompt-vault:init` — 프로젝트에 로깅 환경 초기화 (.local/logs, .gitignore, CLAUDE.md, .config) |
-| `skills/log/SKILL.md` | `/prompt-vault:log [제목]` — 완료된 작업을 phase-NNN.md로 기록 |
-| `skills/status/SKILL.md` | `/prompt-vault:status` — _index.md 기반 진행 상태 요약 |
-| `hooks/hooks.json` | Stop(컨텍스트 경고), PreCompact(시점 기록), SessionStart(복구) 훅 등록 |
-| `scripts/context-check.sh` | Stop 훅 — transcript 크기로 컨텍스트 사용량 추정, 80% 초과 시 경고 |
-| `scripts/pre-compact.sh` | PreCompact 훅 — compaction.log에 압축 시점/페이즈 수 기록 |
-| `scripts/post-compact.sh` | SessionStart 훅 — 압축 후 _index.md + 최신 phase를 stdout으로 재주입 |
-| `templates/phase.md` | 페이즈 로그 작성 템플릿 |
-| `templates/index.md` | _index.md 초기 템플릿 |
-| `templates/claude-md-snippet.md` | 대상 프로젝트 CLAUDE.md에 삽입할 로깅 프로토콜 |
-| `skills/report/SKILL.md` | `/prompt-vault:report` — 페이즈 로그를 HTML 리포트로 시각화 |
-| `scripts/generate-report.sh` | 리포트 생성 셸 스크립트 (토큰 비용 제로) |
-| `templates/report-summary.html` | 요약 대시보드 HTML 템플릿 |
-| `templates/report-detail.html` | 상세 채팅 로그 HTML 템플릿 |
-| `data/palettes.json` | Coolors 기반 큐레이션 5색 팔레트 세트 |
+| `.claude-plugin/plugin.json` | Plugin manifest (name, version, description) |
+| `skills/init/SKILL.md` | `/prompt-vault:init` — Initialize logging environment (.local/logs, .gitignore, CLAUDE.md, .config) |
+| `skills/log/SKILL.md` | `/prompt-vault:log [title]` — Record completed work as phase-NNN.md |
+| `skills/status/SKILL.md` | `/prompt-vault:status` — Show progress summary based on _index.md |
+| `skills/report/SKILL.md` | `/prompt-vault:report` — Visualize phase logs as HTML reports |
+| `hooks/hooks.json` | Stop (context warning), PreCompact (checkpoint), SessionStart (restore) hooks |
+| `scripts/context-check.sh` | Stop hook — estimate context usage via transcript size, warn at 80% |
+| `scripts/pre-compact.sh` | PreCompact hook — record compaction timestamp/phase count |
+| `scripts/post-compact.sh` | SessionStart hook — re-inject _index.md + latest phase after compaction |
+| `scripts/generate-report.sh` | Report generation shell script (zero token cost) |
+| `templates/phase.md` | Phase log template |
+| `templates/index.md` | _index.md initial template |
+| `templates/claude-md-snippet.md` | Logging protocol snippet for target project's CLAUDE.md |
+| `templates/report-summary.html` | Summary dashboard HTML template |
+| `templates/report-detail.html` | Detailed chat log HTML template |
+| `data/palettes.json` | Curated 5-color palette sets |
 
-## 대상 프로젝트에 생성되는 구조
+## Generated Structure in Target Project
 
 ```
 project/
 ├── .local/
 │   └── logs/
-│       ├── .config          # 모델/threshold 설정
-│       ├── _index.md        # 페이즈 인덱스 테이블
-│       ├── phase-001.md     # 각 페이즈 로그
+│       ├── .config              # Model/threshold settings
+│       ├── _index.md            # Phase index table
+│       ├── phase-001.md         # Individual phase logs
 │       ├── phase-002.md
-│       ├── compaction.log   # 자동 압축 이력
-│       ├── report-summary.html  # 요약 대시보드 (자동 생성)
-│       └── report-detail.html   # 상세 채팅 로그 (자동 생성)
-├── .gitignore               # .local/ 추가됨
-└── CLAUDE.md                # 로깅 프로토콜 섹션 추가됨
+│       ├── compaction.log       # Auto-compaction history
+│       ├── report-summary.html  # Summary dashboard (auto-generated)
+│       └── report-detail.html   # Detailed chat log (auto-generated)
+├── .gitignore                   # .local/ added
+└── CLAUDE.md                    # Logging protocol section added
 ```
 
-## 컨텍스트 threshold 설정
+## Context Threshold Settings
 
-| 모델 | 컨텍스트 | 80% warn_bytes |
-|------|----------|----------------|
+| Model | Context | 80% warn_bytes |
+|-------|---------|----------------|
 | Opus/Sonnet/Haiku (200K) | 200K tokens | 640,000 bytes |
 | Extended (1M) | 1M tokens | 3,200,000 bytes |
 
-## 사용법
+## Usage
 
 ```bash
 claude --plugin-dir /path/to/prompt-vault
 ```
 
-## 현재 상태
-- v1.1.0 HTML 리포팅 기능 추가
+## Current Status
+- v1.1.0: HTML reporting feature added
 - GitHub: https://github.com/lemon-etvibe/prompt-vault

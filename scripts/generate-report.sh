@@ -1,7 +1,7 @@
 #!/bin/bash
-# generate-report.sh — prompt-vault HTML report generator
-# Parses _index.md + phase-*.md → report-summary.html + report-detail.html
-# Token cost: ZERO (pure shell script)
+# generate-report.sh — prompt-vault HTML 리포트 생성기
+# _index.md + phase-*.md 파싱 → report-summary.html + report-detail.html 생성
+# 토큰 비용: 제로 (순수 셸 스크립트)
 
 set -euo pipefail
 
@@ -9,17 +9,17 @@ LOGS_DIR=".local/logs"
 CONFIG="${LOGS_DIR}/.config"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-# === 0. Validate environment ===
+# === 0. 환경 검증 ===
 if [ ! -d "$LOGS_DIR" ]; then
   echo "ERROR: ${LOGS_DIR} not found. Run /prompt-vault:init first." >&2
   exit 1
 fi
 
-# Temp directory for intermediate files (Oracle #4: avoid large shell variables)
+# 임시 디렉토리 (대용량 셸 변수 회피)
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# === 1. Read config ===
+# === 1. 설정 읽기 ===
 if command -v jq &>/dev/null && [ -f "$CONFIG" ]; then
   PROJECT_NAME=$(jq -r '.project_name // empty' "$CONFIG")
   PROJECT_DESC=$(jq -r '.project_description // empty' "$CONFIG")
@@ -30,7 +30,7 @@ if command -v jq &>/dev/null && [ -f "$CONFIG" ]; then
   COLOR_5=$(jq -r '.palette[4] // empty' "$CONFIG")
 fi
 
-# Defaults (jq missing or fields empty)
+# 기본값 (jq 미설치 또는 필드 비어있을 때)
 PROJECT_NAME="${PROJECT_NAME:-$(basename "$(pwd)")}"
 PROJECT_DESC="${PROJECT_DESC:-}"
 COLOR_1="${COLOR_1:-#264653}"
@@ -41,7 +41,7 @@ COLOR_5="${COLOR_5:-#E76F51}"
 
 GENERATED_AT=$(date '+%Y-%m-%d %H:%M')
 
-# === Helper: HTML escape (Neo #1: added single quote) ===
+# === 헬퍼: HTML 이스케이핑 ===
 html_escape() {
   local text="$1"
   text="${text//&/&amp;}"
@@ -52,12 +52,12 @@ html_escape() {
   printf '%s' "$text"
 }
 
-# === Helper: Escape string for sed replacement (Neo #2: special chars) ===
+# === 헬퍼: sed 치환용 특수문자 이스케이핑 ===
 sed_escape() {
   printf '%s' "$1" | sed 's/[&/|\\]/\\&/g'
 }
 
-# === Helper: Replace marker in file using head/tail split (Oracle #3: temp file) ===
+# === 헬퍼: head/tail 분할로 마커 치환 ===
 replace_marker() {
   local file="$1"
   local marker="$2"
@@ -76,7 +76,7 @@ replace_marker() {
   mv "$tmp" "$file"
 }
 
-# === Helper: Extract section content using awk state machine (Oracle #1: moved out of loop) ===
+# === 헬퍼: awk 상태머신으로 섹션 내용 추출 ===
 extract_section() {
   local file="$1"
   local section="$2"
@@ -87,7 +87,7 @@ extract_section() {
   ' "$file" | sed '/^[[:space:]]*$/d'
 }
 
-# === Helper: Convert markdown list to HTML (Oracle #2: moved out of loop) ===
+# === 헬퍼: 마크다운 리스트 → HTML 변환 ===
 md_to_html_list() {
   local text="$1"
   if [ -z "$text" ]; then
@@ -103,13 +103,13 @@ md_to_html_list() {
   echo "</ul>"
 }
 
-# === 2. Parse _index.md ===
+# === 2. _index.md 파싱 ===
 PHASE_COUNT=0
 DONE_COUNT=0
 FIRST_DATE=""
 LAST_DATE=""
 
-# Temp files for accumulated HTML (Oracle #4: avoid ARG_MAX)
+# HTML 누적용 임시 파일 (ARG_MAX 회피)
 PHASE_TABLE_FILE="${TMP_DIR}/phase_table.html"
 PHASE_TIMELINE_FILE="${TMP_DIR}/phase_timeline.html"
 PHASE_NAV_FILE="${TMP_DIR}/phase_nav.html"
@@ -179,34 +179,34 @@ NAVEOF
   done < <(awk 'NR>3 && /^\|/ && !/^\|[-| ]+\|$/' "$INDEX_FILE")
 fi
 
-# Date range
+# 날짜 범위
 DATE_RANGE="${FIRST_DATE:-N/A}"
 if [ -n "$LAST_DATE" ] && [ "$FIRST_DATE" != "$LAST_DATE" ]; then
   DATE_RANGE="${FIRST_DATE} ~ ${LAST_DATE}"
 fi
 
-# Progress percentage
+# 진행률
 if [ "$PHASE_COUNT" -gt 0 ]; then
   PROGRESS_PCT="$((DONE_COUNT * 100 / PHASE_COUNT))%"
 else
   PROGRESS_PCT="0%"
 fi
 
-# === 3. Parse phase-*.md files ===
+# === 3. phase-*.md 파싱 ===
 for phase_file in "${LOGS_DIR}"/phase-*.md; do
   [ -f "$phase_file" ] || continue
 
-  # Extract phase number from filename
+  # 파일명에서 페이즈 번호 추출
   PHASE_NUM=$(basename "$phase_file" | sed 's/phase-\([0-9]*\)\.md/\1/')
 
-  # Title
+  # 제목
   PHASE_TITLE=$(awk 'NR==1 {sub(/^# Phase [0-9]+: /, ""); print}' "$phase_file")
   PHASE_TITLE=$(html_escape "$PHASE_TITLE")
 
-  # Date
+  # 날짜
   PHASE_DATE=$(awk -F': ' '/^\- \*\*Date\*\*/ {print $2}' "$phase_file")
 
-  # Extract sections
+  # 섹션 추출
   USER_PROMPT=$(extract_section "$phase_file" "User Prompt")
   USER_PROMPT=$(html_escape "$USER_PROMPT")
   USER_PROMPT=$(echo "$USER_PROMPT" | sed 's/^&gt; //')
@@ -223,13 +223,13 @@ for phase_file in "${LOGS_DIR}"/phase-*.md; do
   NEXT=$(extract_section "$phase_file" "Next")
   NEXT=$(html_escape "$NEXT")
 
-  # Convert to HTML lists
+  # HTML 리스트로 변환
   ACTIONS_HTML=$(md_to_html_list "$ACTIONS")
   RESULTS_HTML=$(md_to_html_list "$RESULTS")
   DECISIONS_HTML=$(md_to_html_list "$DECISIONS")
   NEXT_HTML=$(md_to_html_list "$NEXT")
 
-  # Build phase section → temp file
+  # 페이즈 섹션 HTML 조립 → temp file
   cat >> "$PHASE_SECTIONS_FILE" <<PHEOF
     <section id="phase-${PHASE_NUM}" class="phase-section">
       <div class="phase-header p-6 mb-4">
@@ -241,7 +241,7 @@ for phase_file in "${LOGS_DIR}"/phase-*.md; do
       </div>
 PHEOF
 
-  # User Prompt — left chat bubble
+  # 사용자 프롬프트 — 좌측 채팅 버블
   if [ -n "$USER_PROMPT" ]; then
     cat >> "$PHASE_SECTIONS_FILE" <<USEREOF
       <div class="mb-4">
@@ -255,7 +255,7 @@ PHEOF
 USEREOF
   fi
 
-  # Claude Response — right chat bubble with collapsible sections
+  # Claude 응답 — 우측 채팅 버블 (접기/펼치기)
   cat >> "$PHASE_SECTIONS_FILE" <<AIEOF
       <div class="mb-4">
         <div class="flex items-start gap-3 justify-end">
@@ -284,7 +284,7 @@ USEREOF
       </div>
 AIEOF
 
-  # Next — separate card
+  # 다음 단계 — 별도 카드
   if [ -n "$NEXT" ]; then
     cat >> "$PHASE_SECTIONS_FILE" <<NEXTEOF
       <div class="next-card p-4 ml-11 mb-4">
@@ -298,10 +298,10 @@ NEXTEOF
   echo "" >> "$PHASE_SECTIONS_FILE"
 done
 
-# === 4. Generate summary report ===
+# === 4. 요약 리포트 생성 ===
 report_type="${1:-all}"
 
-# Pre-escape variables for sed (Neo #2: special char safety)
+# sed용 변수 사전 이스케이핑
 S_PROJECT_NAME=$(sed_escape "$PROJECT_NAME")
 S_PROJECT_DESC=$(sed_escape "$PROJECT_DESC")
 
@@ -314,7 +314,7 @@ generate_summary() {
     return 1
   fi
 
-  # Step 1: Simple placeholder sed replacement (escaped values)
+  # 1단계: 단순 플레이스홀더 sed 치환
   sed "s|{{PROJECT_NAME}}|${S_PROJECT_NAME}|g; \
        s|{{PROJECT_DESC}}|${S_PROJECT_DESC}|g; \
        s|{{COLOR_1}}|${COLOR_1}|g; \
@@ -328,7 +328,7 @@ generate_summary() {
        s|{{DATE_RANGE}}|${DATE_RANGE}|g; \
        s|{{GENERATED_AT}}|${GENERATED_AT}|g" "$template" > "$output"
 
-  # Step 2: Multi-line markers via temp files
+  # 2단계: 반복 구간 마커를 임시 파일로 치환
   replace_marker "$output" "{{PHASE_TABLE}}" "$PHASE_TABLE_FILE"
   replace_marker "$output" "{{PHASE_TIMELINE}}" "$PHASE_TIMELINE_FILE"
 
@@ -344,7 +344,7 @@ generate_detail() {
     return 1
   fi
 
-  # Step 1: Simple placeholder sed replacement (escaped values)
+  # 1단계: 단순 플레이스홀더 sed 치환
   sed "s|{{PROJECT_NAME}}|${S_PROJECT_NAME}|g; \
        s|{{COLOR_1}}|${COLOR_1}|g; \
        s|{{COLOR_2}}|${COLOR_2}|g; \
@@ -353,14 +353,14 @@ generate_detail() {
        s|{{COLOR_5}}|${COLOR_5}|g; \
        s|{{GENERATED_AT}}|${GENERATED_AT}|g" "$template" > "$output"
 
-  # Step 2: Multi-line markers via temp files
+  # 2단계: 반복 구간 마커를 임시 파일로 치환
   replace_marker "$output" "{{PHASE_SECTIONS}}" "$PHASE_SECTIONS_FILE"
   replace_marker "$output" "{{PHASE_NAV}}" "$PHASE_NAV_FILE"
 
   echo "Generated: ${output}"
 }
 
-# === 5. Execute based on argument ===
+# === 5. 인자에 따라 실행 ===
 case "$report_type" in
   summary)
     generate_summary

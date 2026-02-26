@@ -1,3 +1,5 @@
+[English](ARCHITECTURE.en.md) | 한국어
+
 # prompt-vault 아키텍처 가이드
 
 이 문서는 prompt-vault 플러그인의 기술적 내부 구조, 설계 결정 사항, 확장 방법을 다룹니다. 개발자와 기여자를 위한 심층 가이드입니다.

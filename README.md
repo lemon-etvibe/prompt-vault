@@ -1,6 +1,8 @@
+[English](README.en.md) | 한국어
+
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 컨텍스트 자동 보호 기능을 갖춘 Claude Code용 페이즈 기반 대화 로깅 플러그인
