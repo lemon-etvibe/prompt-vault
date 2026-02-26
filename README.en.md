@@ -291,6 +291,13 @@ your-project/
 - "Code changes" (too vague)
 - "Bug fix" (specify which bug)
 
+### Context Management Tips
+
+1. **Regular status checks**: Use `/prompt-vault:status` to track progress
+2. **Mandatory logging before compaction**: Always save current work when warnings appear
+3. **Semantic phase units**: Each phase should have one clear objective
+4. **Leverage sub-agents**: Delegate long exploratory tasks via Task tool to protect main context
+
 ## FAQ
 
 ### Q1. What's the performance impact?
@@ -312,6 +319,14 @@ your-project/
 ### Q5. What if I want to commit logs to Git?
 
 **A**: Remove the `.local/` line from `.gitignore`. Note that logs may contain sensitive information (API keys, internal logic). Can be useful for team collaboration.
+
+### Q6. What happens if I delete a phase number?
+
+**A**: `/prompt-vault:log` determines the next number based on existing `phase-*.md` files, so deleting a file won't fill the gap. Example: if 001, 002, 003 exist and you delete 002, the next log will be 004.
+
+### Q7. Are logs useful even without compaction?
+
+**A**: Yes, logs are very useful for systematically managing project history regardless of compaction. You can query progress anytime with `/prompt-vault:status` and search past decisions with `grep`.
 
 ## Troubleshooting
 
@@ -344,6 +359,12 @@ cat .local/logs/.config
 **Cause**: No phases were logged before compaction
 
 **Fix**: The SessionStart hook requires `.local/logs/` directory with at least one `_index.md` and `phase-*.md` file. Always run `/prompt-vault:log` before compaction.
+
+### Phase Numbers Have Gaps
+
+**Cause**: Previously manually deleted phase files, or numbering logic characteristic
+
+**This is normal behavior.** Numbers don't need to be sequential; just sort by filename.
 
 ## Contributing
 
