@@ -154,6 +154,12 @@ claude --plugin-dir /path/to/prompt-vault
 - When context warning occurs (required before compaction)
 - Before breaks to save current work state
 
+**Examples**:
+```bash
+/prompt-vault:log "User authentication API implementation"
+/prompt-vault:log "Database schema design"
+```
+
 ### `/prompt-vault:report [summary|detail|all|custom]`
 
 **Purpose**: Convert phase logs to visualized HTML reports
@@ -168,6 +174,14 @@ claude --plugin-dir /path/to/prompt-vault
 - `detail`: Detailed log view only
 - `all` (default): Both
 - `custom`: Claude generates a custom report
+
+**Examples**:
+```bash
+/prompt-vault:report           # Generate default report
+/prompt-vault:report summary   # Summary only
+/prompt-vault:report custom    # Custom (reflects additional requests)
+open .local/logs/report-summary.html  # Open in browser
+```
 
 ### `/prompt-vault:status`
 
@@ -264,6 +278,16 @@ your-project/
 
 **Formula**: `warn_bytes = (context_window_tokens × 4) × (warn_percent / 100)`
 (1 token ≈ 4 bytes estimate)
+
+### Customizing Thresholds
+
+You can adjust thresholds by editing the `.config` file directly:
+
+```bash
+# Lower threshold to 70% (receive warnings earlier)
+vim .local/logs/.config
+# Change warn_percent to 70, warn_bytes to 560000
+```
 
 ## Best Practices
 
