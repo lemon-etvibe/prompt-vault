@@ -2,6 +2,7 @@
 
 - **Date**: YYYY-MM-DD
 - **Session**: SESSION_ID
+- **Trigger**: manual
 
 ## User Prompt
 > Record the user's original request as verbatim as possible
