@@ -2,7 +2,7 @@
 
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 컨텍스트 자동 보호 기능을 갖춘 Claude Code용 페이즈 기반 대화 로깅 플러그인
@@ -55,6 +55,14 @@ prompt-vault는 **훅(Hook) 기반 자동 복구**와 **페이즈 단위 구조�
 - **상세 로그 뷰**: 채팅 버블 UI로 사용자 프롬프트 ↔ Claude 응답 표시
 - Coolors 기반 5색 팔레트로 프로젝트별 고유한 디자인
 - 순수 정적 HTML — 브라우저만 있으면 열람 가능
+
+### 🤖 자동 로깅 (v1.2.0 신규)
+- **Stop 훅**: 세션 종료 시 대화 턴 수 ≥ 3이면 자동으로 페이즈 로그 생성
+- **PreCompact 훅**: 컨텍스트 압축(자동/수동) 시 압축 전 작업 내용 자동 기록
+- **듀얼 트랙**: 기본 = JSONL 파서 (무비용, 항상 성공) / AI 모드 = `claude --print` 옵트인
+- **해시 기반 중복 방지**: Stop + PreCompact가 같은 세션에서 실행돼도 이중 기록 없음
+- **비동기 실행**: `nohup` + 락 파일로 Claude Code UX 블로킹 없이 백그라운드 처리
+- 설정: `.prompt-vault/config.json`의 `autoLog` 섹션에서 `minTurns`, `aiSummary` 등 조정 가능
 
 ### 🔒 Git 안전 저장
 - 모든 로그는 프로젝트의 `.local/logs/` 디렉토리에 저장

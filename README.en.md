@@ -2,7 +2,7 @@
 
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > A phase-based conversation logging plugin for Claude Code with automatic context protection
@@ -55,6 +55,14 @@ prompt-vault solves these problems with **hook-based automatic recovery** and **
 - **Detailed log view**: Chat bubble UI showing user prompts ↔ Claude responses
 - Project-unique design with 5-color palette
 - Pure static HTML — viewable with just a browser
+
+### 🤖 Auto-Logging (New in v1.2.0)
+- **Stop Hook**: Automatically generates phase log when session ends (if turns ≥ 3)
+- **PreCompact Hook**: Records work before context compaction (auto/manual)
+- **Dual Track**: Default = JSONL parser (zero cost, always succeeds) / AI mode = `claude --print` opt-in
+- **Hash-based Dedup**: No duplicate logs even when Stop + PreCompact fire in same session
+- **Async Execution**: `nohup` + lock file — no Claude Code UX blocking
+- Config: adjust `minTurns`, `aiSummary` in `.prompt-vault/config.json` `autoLog` section
 
 ### 🔒 Git-Safe Storage
 - All logs stored in project's `.local/logs/` directory

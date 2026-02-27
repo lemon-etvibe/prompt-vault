@@ -12,7 +12,8 @@ After completing this tutorial, you will be able to:
 2. ✅ Systematically record work in phase units
 3. ✅ View phase progress at a glance
 4. ✅ Understand and utilize the context protection mechanism
-5. ✅ Apply best practices in real projects
+5. ✅ Configure auto-logging and understand dual-track mode (v1.2.0)
+6. ✅ Apply best practices in real projects
 
 **Estimated time**: 15-20 minutes
 **Difficulty**: Beginner
@@ -66,7 +67,7 @@ claude
 When Claude starts, you should see the following message:
 
 ```
-✓ Loaded plugin: prompt-vault (1.1.0)
+✓ Loaded plugin: prompt-vault (1.2.0)
   Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status, /prompt-vault:report
 ```
 
@@ -96,10 +97,13 @@ Claude will perform the following actions:
 ✓ Created .local/logs/_index.md (phase index table)
 ✓ Added .local/ to .gitignore
 ✓ Added Phase Logging Protocol to CLAUDE.md
+✓ Created .prompt-vault/config.json with autoLog settings
+✓ Auto-logging enabled (Stop hook: minTurns=3, AI summary: off)
 
 Initialization complete! You can now use:
 - /prompt-vault:log [title] — Log completed work
 - /prompt-vault:status — View phase progress
+- Auto-logging is active — logs are created automatically on session end/compact
 ```
 
 ### 1.3 Verify Generated Files
@@ -107,7 +111,7 @@ Initialization complete! You can now use:
 Check the generated files in your terminal:
 
 ```bash
-# Check directory structure
+# Check log directory
 ls -la .local/logs/
 
 # Expected output:
@@ -116,6 +120,9 @@ ls -la .local/logs/
 
 # Check .config contents
 cat .local/logs/.config
+
+# Check auto-logging config (v1.2.0)
+cat .prompt-vault/config.json
 ```
 
 **Expected output**:
@@ -437,6 +444,65 @@ cat .local/logs/compaction.log
 Phase count: 3
 ---
 ```
+
+## Phase 6: Auto-Logging Setup (New in v1.2.0)
+
+Starting from v1.2.0, work history is **automatically recorded** without running `/prompt-vault:log` manually.
+
+### 6.1 What is Auto-Logging?
+
+Logs are automatically created at two trigger points:
+
+- **Stop Hook**: Auto-generates phase log when session ends (if conversation turns ≥ 3)
+- **PreCompact Hook**: Auto-records work before context compaction (auto/manual)
+
+### 6.2 Configuration
+
+`/prompt-vault:init` includes auto-logging settings in `.prompt-vault/config.json`:
+
+```json
+{
+  "autoLog": {
+    "stopHook": {
+      "enabled": true,
+      "minTurns": 3
+    },
+    "ai": {
+      "aiSummary": false
+    }
+  }
+}
+```
+
+### 6.3 Dual-Track Mode
+
+| Mode | Description | Cost | Config |
+|------|-------------|------|--------|
+| **JSONL Parser** (default) | Parses transcript into structured log | Free | `aiSummary: false` |
+| **AI Summary** (opt-in) | Uses `claude --print` for AI-generated summary | API cost | `aiSummary: true` |
+
+The default JSONL parser mode **always succeeds at zero cost**. If AI summary fails, it automatically falls back to JSONL parser.
+
+### 6.4 Verify It Works
+
+Auto-logging runs in the background — no manual action needed:
+
+1. Work with Claude as usual
+2. Logs are auto-generated on session Stop or Compact
+3. Check with `/prompt-vault:status`
+
+```bash
+# Auto-generated logs include a Trigger field
+cat .local/logs/phase-003.md | head -5
+# Phase 003: ...
+# - **Trigger**: stop (auto)
+```
+
+### 6.5 Key Points
+
+- ✅ **Works alongside manual logging** — `/prompt-vault:log` still works
+- ✅ **No duplicates** — Hash-based dedup prevents double-logging
+- ✅ **No UX blocking** — Async (nohup) execution, no impact on Claude Code responsiveness
 
 ## Real-World Scenarios
 

@@ -12,7 +12,8 @@
 2. ✅ 페이즈 단위로 작업 내용을 체계적으로 기록
 3. ✅ 페이즈 진행 상황을 한눈에 확인
 4. ✅ 컨텍스트 보호 메커니즘 이해 및 활용
-5. ✅ 실제 프로젝트에서 모범 사례 적용
+5. ✅ 자동 로깅 설정 및 듀얼 트랙 이해 (v1.2.0)
+6. ✅ 실제 프로젝트에서 모범 사례 적용
 
 **소요 시간**: 15-20분
 **난이도**: 초급
@@ -66,7 +67,7 @@ claude
 Claude가 시작되면 다음과 같은 메시지가 표시되어야 합니다:
 
 ```
-✓ Loaded plugin: prompt-vault (1.1.0)
+✓ Loaded plugin: prompt-vault (1.2.0)
   Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status, /prompt-vault:report
 ```
 
@@ -96,10 +97,13 @@ Claude가 다음과 같은 작업을 수행합니다:
 ✓ Created .local/logs/_index.md (phase index table)
 ✓ Added .local/ to .gitignore
 ✓ Added Phase Logging Protocol to CLAUDE.md
+✓ Created .prompt-vault/config.json with autoLog settings
+✓ Auto-logging enabled (Stop hook: minTurns=3, AI summary: off)
 
 Initialization complete! You can now use:
 - /prompt-vault:log [title] — Log completed work
 - /prompt-vault:status — View phase progress
+- Auto-logging is active — logs are created automatically on session end/compact
 ```
 
 ### 1.3 생성된 파일 확인
@@ -107,7 +111,7 @@ Initialization complete! You can now use:
 터미널에서 생성된 파일을 확인해보세요:
 
 ```bash
-# 디렉토리 구조 확인
+# 로그 디렉토리 확인
 ls -la .local/logs/
 
 # 출력 예시:
@@ -116,6 +120,9 @@ ls -la .local/logs/
 
 # .config 내용 확인
 cat .local/logs/.config
+
+# 자동 로깅 설정 확인 (v1.2.0)
+cat .prompt-vault/config.json
 ```
 
 **예상 출력**:
@@ -437,6 +444,65 @@ cat .local/logs/compaction.log
 Phase count: 3
 ---
 ```
+
+## 페이즈 6: 자동 로깅 설정 (v1.2.0 신규)
+
+v1.2.0부터 `/prompt-vault:log`를 직접 실행하지 않아도 **자동으로 작업 이력이 기록**됩니다.
+
+### 6.1 자동 로깅이란?
+
+두 가지 시점에서 자동 기록됩니다:
+
+- **Stop 훅**: 세션 종료 시 대화 턴 수 ≥ 3이면 자동 페이즈 로그 생성
+- **PreCompact 훅**: 컨텍스트 압축(자동/수동) 시 압축 전 내용 자동 기록
+
+### 6.2 설정 확인
+
+`/prompt-vault:init` 실행 시 `.prompt-vault/config.json`에 자동 로깅 설정이 포함됩니다:
+
+```json
+{
+  "autoLog": {
+    "stopHook": {
+      "enabled": true,
+      "minTurns": 3
+    },
+    "ai": {
+      "aiSummary": false
+    }
+  }
+}
+```
+
+### 6.3 듀얼 트랙 이해하기
+
+| 모드 | 설명 | 비용 | 설정 |
+|------|------|------|------|
+| **JSONL 파서** (기본) | transcript를 파싱하여 구조화된 로그 생성 | 무료 | `aiSummary: false` |
+| **AI 요약** (옵트인) | `claude --print`로 AI가 요약 생성 | API 비용 발생 | `aiSummary: true` |
+
+기본 모드는 JSONL 파서로, **API 비용 없이 항상 성공**합니다. AI 요약 실패 시에도 JSONL 파서로 자동 폴백됩니다.
+
+### 6.4 동작 확인
+
+자동 로깅은 백그라운드에서 실행되므로 별도 조작이 필요 없습니다:
+
+1. 평소처럼 Claude와 작업
+2. 세션 종료(Stop) 또는 압축(Compact) 시 자동 기록
+3. `/prompt-vault:status`로 자동 생성된 로그 확인
+
+```bash
+# 자동 생성된 로그에는 Trigger 필드가 포함됩니다
+cat .local/logs/phase-003.md | head -5
+# Phase 003: ...
+# - **Trigger**: stop (auto)
+```
+
+### 6.5 핵심 포인트
+
+- ✅ **수동 로깅과 병행 가능** — `/prompt-vault:log`도 여전히 사용 가능
+- ✅ **중복 방지** — 해시 기반 dedup으로 같은 내용이 두 번 기록되지 않음
+- ✅ **UX 블로킹 없음** — 비동기(nohup) 실행으로 Claude Code 응답에 영향 없음
 
 ## 실제 시나리오
 
