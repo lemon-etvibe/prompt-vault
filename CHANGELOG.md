@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-27
+
+### Added
+- Auto-logging system via Stop and PreCompact hooks
+- `scripts/autolog.mjs` — Node.js auto-logging engine (zero external dependencies)
+  - JSONL transcript parsing with readline streams
+  - Turn-based trigger (configurable threshold, default: 3 turns)
+  - SHA-256 hash dedup prevents Stop → PreCompact double-logging
+  - Lock file with stale PID detection prevents concurrent execution
+  - Phase log generation compatible with `generate-report.sh`
+- `last-log-state.json` — state tracking for incremental logging
+- `- **Trigger**:` metadata field in phase template
+- Auto-log opt-in configuration via `/prompt-vault:init`
+
+### Changed
+- `hooks/hooks.json` — added autolog.mjs to Stop (timeout: 10s) and PreCompact (timeout: 15s) hooks
+- `skills/init/SKILL.md` — added autoLog configuration step (enabled, turnThreshold)
+- `skills/log/SKILL.md` — manual log now updates `last-log-state.json` to prevent auto-logger duplication
+- `templates/phase.md` — added Trigger metadata field
+- `plugin.json` — version bumped to 1.2.0
+
 ## [1.1.0] - 2026-02-26
 
 ### Added

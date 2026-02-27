@@ -65,7 +65,21 @@ Set up the prompt-vault logging environment for a project.
    }
    ```
 
-7. Output initialization complete message — include generated palette preview and restart guide:
+7. Configure auto-logging:
+   - Ask user: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
+   - If yes: MERGE `autoLog` into existing `.config` (do NOT overwrite other fields)
+     ```json
+     {
+       "autoLog": {
+         "enabled": true,
+         "turnThreshold": 3
+       }
+     }
+     ```
+   - If no: skip (autoLog key absent = disabled by default)
+   - Note: Read existing `.config` first, merge `autoLog` key, then write back
+
+8. Output initialization complete message — include generated palette preview and restart guide:
 
    ```
    ✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.

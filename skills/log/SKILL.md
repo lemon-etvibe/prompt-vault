@@ -43,4 +43,22 @@ Record completed work from the current conversation session as a phase log.
    | NNN | Title | done | YYYY-MM-DD | One-line summary |
    ```
 
-5. Output completion message
+5. Update auto-log state file (`.local/logs/last-log-state.json`) to prevent auto-logger duplication:
+   - Compute transcript hash via Bash:
+     ```bash
+     shasum -a 256 ~/.claude/projects/.../SESSION_ID.jsonl | cut -d' ' -f1
+     ```
+     Prefix with `sha256:` to form `"sha256:<hex>"`
+   - Write state:
+     ```json
+     {
+       "lastLogTimestamp": <current_timestamp_ms>,
+       "lastTranscriptHash": "sha256:<hash>",
+       "lastLogTurnCount": <total_turn_count>,
+       "lastPhaseNumber": "<NNN>",
+       "lastTrigger": "manual"
+     }
+     ```
+   - This ensures the auto-logger (Stop/PreCompact hooks) won't re-log the same content
+
+6. Output completion message
