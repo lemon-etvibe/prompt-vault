@@ -44,7 +44,11 @@ Record completed work from the current conversation session as a phase log.
    ```
 
 5. Update auto-log state file (`.local/logs/last-log-state.json`) to prevent auto-logger duplication:
-   - Read current transcript hash: `sha256` of the transcript JSONL file
+   - Compute transcript hash via Bash:
+     ```bash
+     shasum -a 256 ~/.claude/projects/.../SESSION_ID.jsonl | cut -d' ' -f1
+     ```
+     Prefix with `sha256:` to form `"sha256:<hex>"`
    - Write state:
      ```json
      {

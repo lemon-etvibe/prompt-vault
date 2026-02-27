@@ -183,7 +183,7 @@ const phaseNum = getNextPhaseNumber(logsDir);
 
 function inferTitle(turns) {
   if (turns.length === 0) return "Auto-logged phase";
-  let title = turns[0].userPrompt.replace(/\n/g, " ").trim();
+  let title = turns[0].userPrompt.split("\n")[0].trim();
   if (title.length > 50) title = title.slice(0, 47) + "...";
   return title || "Auto-logged phase";
 }
@@ -215,7 +215,7 @@ function formatResults(turns) {
   if (!lastTurn || lastTurn.assistantTexts.length === 0) return "- (no text response recorded)";
 
   const lastText = lastTurn.assistantTexts[lastTurn.assistantTexts.length - 1];
-  const lines = lastText.split("\n").filter(l => l.trim()).slice(0, 3);
+  const lines = lastText.split("\n").filter(l => l.trim() && !l.trim().startsWith("```")).slice(0, 3);
   return lines.map(l => {
     const trimmed = l.trim().slice(0, 120);
     return trimmed.startsWith("- ") ? trimmed : `- ${trimmed}`;
