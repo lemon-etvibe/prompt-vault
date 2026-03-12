@@ -1,13 +1,13 @@
 {
   "name": "prompt-vault",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "owner": {
     "name": "lemon-etvibe"
   },
   "plugins": [
     {
       "name": "prompt-vault",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "source": "./",
       "description": "Phase-based conversation logging with context protection and HTML reporting"
     }
