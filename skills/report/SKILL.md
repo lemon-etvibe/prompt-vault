@@ -1,6 +1,6 @@
 ---
 name: report
-description: Visualize phase logs as HTML reports.
+description: "Generate visual HTML dashboards from phase logs. Use when the user asks for '리포트', '보고서', 'report', 'dashboard', visualization, or wants to see work history in a browser."
 disable-model-invocation: false
 argument-hint: [summary|detail|all|custom]
 ---
@@ -56,3 +56,15 @@ Reference the following data when generating reports:
 - `_index.md` missing → Generate empty report with warning message
 - `phase-*.md` non-standard format → Display parseable parts only, leave rest empty
 - `.config` missing → Use defaults (project directory name, default palette)
+
+## Example
+
+**Input**: `/prompt-vault:report`
+**Output**:
+```
+✅ 리포트 생성 완료!
+- Summary: .local/logs/report-summary.html
+- Detail: .local/logs/report-detail.html
+
+open .local/logs/report-summary.html
+```

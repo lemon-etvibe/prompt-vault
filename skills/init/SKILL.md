@@ -1,6 +1,6 @@
 ---
 name: init
-description: Initialize prompt-vault logging environment for the current project.
+description: "Initialize prompt-vault logging environment. Use when starting a new project, when .local/logs/ doesn't exist, or when the user says 'init', '초기화', 'set up logging'. Also trigger if other skills fail because logging isn't set up yet."
 disable-model-invocation: true
 ---
 
@@ -10,6 +10,7 @@ Set up the prompt-vault logging environment for a project.
 
 1. Create `.local/logs/` directory
 2. Add `.local/` to `.gitignore` (skip if already present)
+   — WHY: 로그는 개인 작업 기록이라 git에 포함하면 안 됨
 3. Initialize `.local/logs/_index.md` (template-based)
 
    ```markdown
@@ -20,6 +21,7 @@ Set up the prompt-vault logging environment for a project.
    ```
 
 4. Add Phase Logging Protocol section to `CLAUDE.md` (skip if already present)
+   — WHY: Claude가 로깅 프로토콜을 자동으로 따르게 하기 위해
    → Reference content from ${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md
 5. Ask user about model/plan and set context threshold in `.local/logs/.config`:
 
@@ -68,6 +70,7 @@ Set up the prompt-vault logging environment for a project.
 7. Configure auto-logging:
    - Ask user: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
    - If yes: MERGE `autoLog` into existing `.config` (do NOT overwrite other fields)
+     — WHY: 기존 설정(palette, warn_bytes 등)을 덮어쓰지 않기 위해
      ```json
      {
        "autoLog": {
