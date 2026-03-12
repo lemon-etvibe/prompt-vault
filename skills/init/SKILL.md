@@ -1,7 +1,7 @@
 ---
 name: init
 description: "Initialize prompt-vault logging environment. Use when starting a new project, when .local/logs/ doesn't exist, or when the user says 'init', '초기화', 'set up logging'. Also trigger if other skills fail because logging isn't set up yet."
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 Set up the prompt-vault logging environment for a project.
