@@ -1,13 +1,13 @@
 {
   "name": "prompt-vault",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "owner": {
     "name": "lemon-etvibe"
   },
   "plugins": [
     {
       "name": "prompt-vault",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "source": "./",
       "description": "Never lose context again. Automatic session logging with phase-based history, HTML reports, and seamless recovery after context compaction."
     }

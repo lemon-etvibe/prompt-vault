@@ -9,7 +9,7 @@ LOGS_DIR=".local/logs"
 CONFIG="${LOGS_DIR}/.config"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-# === 언어 설정 ===
+# === Language setup ===
 source "${PLUGIN_ROOT}/scripts/get-lang.sh"
 LABELS_FILE="${PLUGIN_ROOT}/templates/labels.${LANG_CODE}.sh"
 if [ -f "$LABELS_FILE" ]; then

@@ -2,7 +2,7 @@
 
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > A phase-based conversation logging plugin for Claude Code with automatic context protection
