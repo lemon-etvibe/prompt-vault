@@ -2,28 +2,27 @@
 
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> A phase-based conversation logging plugin for Claude Code with automatic context protection
+> A retrospective journal for vibe coders. Log your AI sessions by phase, review your prompt patterns, and grow your skills with every interaction.
 
 ## What is prompt-vault?
 
-When working on long projects with Claude Code, context compaction causes **important work history and progress to be lost**. prompt-vault was born to solve this problem.
+When experimenting with prompt engineering and vibe coding, trial and error is inevitable. But most developers lose that history — and the lessons it contains — the moment their Claude Code context compacts.
 
-### Problems It Solves
+**prompt-vault turns every AI session into a personal retrospective**: automatically log what you tried, what worked, and what didn't. Review your patterns. Improve your AI collaboration skills one phase at a time.
 
-- **Work history loss during context compaction**: After compaction, previous phase decisions and progress are forgotten
-- **No project progress tracking**: Difficult to see at a glance what's been completed and what was decided
-- **Manual logging burden**: Having to manually record work content in separate documents
+### Example Use Cases
 
-### How It Works
+**🔍 Retrospective Analysis for Vibe Coding Growth**
+When experimenting with complex prompt engineering, trial and error is inevitable. Prompt Vault logs your entire interaction history, allowing you to review past prompts, analyze why certain instructions succeeded or failed, and continuously refine your AI communication skills for better future results.
 
-prompt-vault solves these problems with **hook-based automatic recovery** and **phase-unit structured logging**:
+**🔄 Context Recovery in Long AI Sessions**
+During complex web development or planning, the AI's context window often fills up. Prompt Vault automatically saves the core context and seamlessly restores it after compaction, enabling continuous, uninterrupted workflow without the frustration of repeating previous instructions.
 
-1. **Automatic context monitoring**: Checks context usage after every response, warns at 80%
-2. **Phase-based logging**: Systematically records meaningful work units with `/prompt-vault:log`
-3. **Automatic recovery**: After context compaction, auto-injects phase index and latest log on session restart
+**📋 Phase-Based Documentation & Team Sharing**
+When breaking down a project into distinct phases (e.g., planning, DB modeling, UI generation), users can save the history of each phase as a clean HTML report. This makes it incredibly easy to document the AI's reasoning, review the progress, and share the outputs with other team members.
 
 ### Key Benefits
 
