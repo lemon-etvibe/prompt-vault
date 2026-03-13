@@ -2,21 +2,32 @@
 name: init
 description: "Initialize prompt-vault logging environment. Use when starting a new project, when .local/logs/ doesn't exist, or when the user says init, 초기화, set up logging. Also trigger if other skills fail because logging isnt set up yet."
 disable-model-invocation: false
+argument-hint: [en|ko]
 ---
 
 Set up the prompt-vault logging environment for a project.
 
-## Procedure
+## Language Detection (Step 1 — ALWAYS run this first, no exceptions)
 
-1. Ask user to choose language:
-   ```
-   Choose language / 언어 선택:
-   [1] English (default — recommended for shared projects)
-   [2] 한국어
-   ```
-   - Default to English if no response within reasonable time or user presses Enter
-   - Save as `lang` in config (value: `"en"` or `"ko"`)
-   - If user is clearly writing in Korean, suggest Korean option
+**IMPORTANT: Always ask the user to choose a language before doing anything else, even if `.local/logs/` already exists.**
+
+1. Check `$ARGUMENTS`:
+   - If `$ARGUMENTS` is `en` → set `LANG_CODE="en"`, skip asking
+   - If `$ARGUMENTS` is `ko` → set `LANG_CODE="ko"`, skip asking
+   - If `$ARGUMENTS` is empty → **ask the user NOW**:
+     ```
+     Choose language / 언어 선택:
+     [1] English (default — recommended for shared projects)
+     [2] 한국어
+
+     Enter 1 or 2 (default: 1):
+     ```
+   - User selects 1 or presses Enter → `LANG_CODE="en"`
+   - User selects 2 → `LANG_CODE="ko"`
+
+Save `LANG_CODE` — it will be written to config in step 7.
+
+## Procedure
 
 2. Create `.local/logs/` directory
 3. Add `.local/` to `.gitignore` (skip if already present)
