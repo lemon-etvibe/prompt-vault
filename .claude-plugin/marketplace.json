@@ -9,7 +9,7 @@
       "name": "prompt-vault",
       "version": "1.2.1",
       "source": "./",
-      "description": "Phase-based conversation logging with context protection and HTML reporting"
+      "description": "Never lose context again. Automatic session logging with phase-based history, HTML reports, and seamless recovery after context compaction."
     }
   ]
 }

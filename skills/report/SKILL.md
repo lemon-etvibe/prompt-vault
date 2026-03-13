@@ -57,10 +57,22 @@ Reference the following data when generating reports:
 - `phase-*.md` non-standard format → Display parseable parts only, leave rest empty
 - `.config` missing → Use defaults (project directory name, default palette)
 
+## Language
+
+Report language follows the `lang` setting in `.local/logs/.config`. English users get English labels, Korean users get Korean labels automatically. The `generate-report.sh` script reads the lang setting and sources the appropriate label file (`labels.en.sh` or `labels.ko.sh`).
+
 ## Example
 
 **Input**: `/prompt-vault:report`
-**Output**:
+**Output** (en):
+```
+✅ Report generated!
+- Summary: .local/logs/report-summary.html
+- Detail: .local/logs/report-detail.html
+
+open .local/logs/report-summary.html
+```
+**Output** (ko):
 ```
 ✅ 리포트 생성 완료!
 - Summary: .local/logs/report-summary.html

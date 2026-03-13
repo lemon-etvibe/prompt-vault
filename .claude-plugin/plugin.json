@@ -1,8 +1,8 @@
 {
   "name": "prompt-vault",
   "version": "1.2.1",
-  "description": "Phase-based conversation logging with context protection and HTML reporting. Tracks user prompts, Claude actions, and results per phase. Auto-preserves progress across context compactions. Generates visual HTML dashboards with 5-color palette system.",
+  "description": "Never lose context again. Automatic session logging with phase-based history, HTML reports, and seamless recovery after context compaction.",
   "author": { "name": "etvibe" },
-  "keywords": ["logging", "phase", "context", "history", "session", "claude-code-plugin", "reporting"],
+  "keywords": ["logging", "phase", "context", "history", "session", "claude-code-plugin", "reporting", "i18n", "multilingual"],
   "license": "MIT"
 }

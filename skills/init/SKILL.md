@@ -1,6 +1,6 @@
 ---
 name: init
-description: "Initialize prompt-vault logging environment. Use when starting a new project, when .local/logs/ doesn't exist, or when the user says 'init', '초기화', 'set up logging'. Also trigger if other skills fail because logging isn't set up yet."
+description: "Initialize prompt-vault logging environment. Use when starting a new project, when .local/logs/ doesn't exist, or when the user says init, 초기화, set up logging. Also trigger if other skills fail because logging isnt set up yet."
 disable-model-invocation: false
 ---
 
@@ -8,10 +8,20 @@ Set up the prompt-vault logging environment for a project.
 
 ## Procedure
 
-1. Create `.local/logs/` directory
-2. Add `.local/` to `.gitignore` (skip if already present)
-   — WHY: 로그는 개인 작업 기록이라 git에 포함하면 안 됨
-3. Initialize `.local/logs/_index.md` (template-based)
+1. Ask user to choose language:
+   ```
+   Choose language / 언어 선택:
+   [1] English (default — recommended for shared projects)
+   [2] 한국어
+   ```
+   - Default to English if no response within reasonable time or user presses Enter
+   - Save as `lang` in config (value: `"en"` or `"ko"`)
+   - If user is clearly writing in Korean, suggest Korean option
+
+2. Create `.local/logs/` directory
+3. Add `.local/` to `.gitignore` (skip if already present)
+   — WHY: Logs are personal work records and should not be committed to git
+4. Initialize `.local/logs/_index.md` (template-based)
 
    ```markdown
    # Phase Log Index
@@ -20,10 +30,10 @@ Set up the prompt-vault logging environment for a project.
    |---|-------|--------|------|---------|
    ```
 
-4. Add Phase Logging Protocol section to `CLAUDE.md` (skip if already present)
-   — WHY: Claude가 로깅 프로토콜을 자동으로 따르게 하기 위해
+5. Add Phase Logging Protocol section to `CLAUDE.md` (skip if already present)
+   — WHY: So Claude automatically follows the logging protocol
    → Reference content from ${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md
-5. Ask user about model/plan and set context threshold in `.local/logs/.config`:
+6. Ask user about model/plan and set context threshold in `.local/logs/.config`:
 
    | Model | Context | 80% threshold (est. bytes) |
    |-------|---------|---------------------------|
@@ -32,9 +42,10 @@ Set up the prompt-vault logging environment for a project.
    | Haiku 4.5 (200K) | 200K tokens | ~640,000 bytes |
    | Extended (1M) | 1M tokens | ~3,200,000 bytes |
 
-6. Set up project metadata and report palette:
+7. Set up project metadata and report palette:
    - `project_name`: Project name (default: current directory name)
    - `project_description`: One-line project description (default: empty)
+   - `lang`: Language code from step 1 (`"en"` or `"ko"`)
    - `palette`: 5-color palette array — auto-generate via colormind.io API, fallback to `${CLAUDE_PLUGIN_ROOT}/data/palettes.json` random selection
 
    Palette generation methods:
@@ -57,6 +68,7 @@ Set up the prompt-vault logging environment for a project.
    Default config example:
    ```json
    {
+     "lang": "en",
      "model": "claude-opus-4-6",
      "context_window_tokens": 200000,
      "warn_percent": 80,
@@ -67,10 +79,11 @@ Set up the prompt-vault logging environment for a project.
    }
    ```
 
-7. Configure auto-logging:
-   - Ask user: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
+8. Configure auto-logging:
+   - en: "Enable auto-logging? (Turn-count based automatic recording via Stop hook)"
+   - ko: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
    - If yes: MERGE `autoLog` into existing `.config` (do NOT overwrite other fields)
-     — WHY: 기존 설정(palette, warn_bytes 등)을 덮어쓰지 않기 위해
+     — WHY: To avoid overwriting existing settings (palette, warn_bytes, etc.)
      ```json
      {
        "autoLog": {
@@ -82,12 +95,18 @@ Set up the prompt-vault logging environment for a project.
    - If no: skip (autoLog key absent = disabled by default)
    - Note: Read existing `.config` first, merge `autoLog` key, then write back
 
-8. Output initialization complete message — include generated palette preview and restart guide:
+9. Output initialization complete message — include generated palette preview and restart guide:
 
-   ```
-   ✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.
-   💡 Claude를 재시작하면 프로토콜이 자동 적용됩니다:
-      /exit → claude --continue
-   ```
+   Based on chosen language:
+   - en:
+     ```
+     ✅ Initialized! Phase Logging Protocol added to CLAUDE.md.
+     💡 Restart Claude to apply: /exit → claude --continue
+     ```
+   - ko:
+     ```
+     ✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.
+     💡 Claude를 재시작하면 프로토콜이 자동 적용됩니다: /exit → claude --continue
+     ```
 
    Note: Use `--continue` flag to resume the session with CLAUDE.md changes applied.

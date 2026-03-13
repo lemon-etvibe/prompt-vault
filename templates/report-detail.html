@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="{{HTML_LANG}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{PROJECT_NAME}} — Phase Detail Log</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  {{FONT_IMPORT}}
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --color-primary: {{COLOR_1}};
@@ -14,7 +15,7 @@
       --color-surface: {{COLOR_4}};
       --color-muted: {{COLOR_5}};
     }
-    * { font-family: 'Noto Sans KR', sans-serif; }
+    * { font-family: {{FONT_FAMILY}}; }
     body { background: #F9FAFB; color: #1F2937; }
     code, .code-inline {
       font-family: 'JetBrains Mono', monospace;
@@ -198,9 +199,9 @@
     <!-- Empty State (shown when no phases) -->
     <div id="empty-state" class="text-center py-20" style="display: none;">
       <div class="text-6xl mb-4">📋</div>
-      <h2 class="text-xl font-bold text-gray-400 mb-2">아직 로그가 없습니다</h2>
+      <h2 class="text-xl font-bold text-gray-400 mb-2">{{LABEL_EMPTY_TITLE}}</h2>
       <p class="text-gray-400 text-sm">
-        <code class="code-inline">/prompt-vault:log</code> 스킬로 첫 페이즈를 기록해보세요.
+        {{LABEL_EMPTY_DESC}}
       </p>
     </div>
   </main>

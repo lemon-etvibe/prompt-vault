@@ -63,7 +63,9 @@ Record completed work from the current conversation session as a phase log.
      ```
    - This ensures the auto-logger (Stop/PreCompact hooks) won't re-log the same content
 
-6. Output completion message
+6. Output completion message (bilingual based on `lang` in `.local/logs/.config`):
+   - en: "✅ Phase NNN logged."
+   - ko: "✅ Phase NNN 기록 완료."
 
 ## Example
 

@@ -1,103 +1,109 @@
-[English](ARCHITECTURE.en.md) | 한국어
+[English](ARCHITECTURE.md) | [한국어](ARCHITECTURE.ko.md)
 
-# prompt-vault 아키텍처 가이드
+# prompt-vault Architecture Guide
 
-이 문서는 prompt-vault 플러그인의 기술적 내부 구조, 설계 결정 사항, 확장 방법을 다룹니다. 개발자와 기여자를 위한 심층 가이드입니다.
+This document covers the technical internals, design decisions, and extension methods of the prompt-vault plugin. A deep-dive guide for developers and contributors.
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [플러그인 구조](#플러그인-구조)
-- [핵심 구성 요소](#핵심-구성-요소)
-- [훅 구현 상세](#훅-구현-상세)
-- [스킬 구현 상세](#스킬-구현-상세)
-- [데이터 흐름](#데이터-흐름)
-- [환경 변수](#환경-변수)
-- [설정 스키마](#설정-스키마)
-- [템플릿 시스템](#템플릿-시스템)
-- [커스터마이징 가이드](#커스터마이징-가이드)
-- [확장 포인트](#확장-포인트)
-- [테스팅 및 디버깅](#테스팅-및-디버깅)
-- [성능 고려사항](#성능-고려사항)
-- [보안 및 개인정보](#보안-및-개인정보)
-- [기여 가이드](#기여-가이드)
-- [버전 히스토리](#버전-히스토리)
+- [Overview](#overview)
+- [Plugin Structure](#plugin-structure)
+- [Core Components](#core-components)
+- [Hook Implementation Details](#hook-implementation-details)
+- [Skill Implementation Details](#skill-implementation-details)
+- [Data Flow](#data-flow)
+- [Environment Variables](#environment-variables)
+- [Configuration Schema](#configuration-schema)
+- [Template System](#template-system)
+- [Customization Guide](#customization-guide)
+- [Extension Points](#extension-points)
+- [Testing and Debugging](#testing-and-debugging)
+- [Performance Considerations](#performance-considerations)
+- [Security and Privacy](#security-and-privacy)
+- [Contributing Guide](#contributing-guide)
+- [Version History](#version-history)
 
-## 개요
+## Overview
 
-### 아키텍처 한눈에 보기
+### Architecture at a Glance
 
 ```
 prompt-vault/
 ├── .claude-plugin/
-│   └── plugin.json          # 플러그인 매니페스트
+│   └── plugin.json          # Plugin manifest
 ├── hooks/
-│   └── hooks.json           # 훅 등록 (Stop, PreCompact, SessionStart)
+│   └── hooks.json           # Hook registration (Stop, PreCompact, SessionStart)
 ├── scripts/
-│   ├── context-check.sh     # Stop 훅: 컨텍스트 사용량 체크
-│   ├── pre-compact.sh       # PreCompact 훅: 압축 시점 기록
-│   └── post-compact.sh      # SessionStart 훅: 복구 데이터 주입
+│   ├── context-check.sh     # Stop hook: context usage check
+│   ├── pre-compact.sh       # PreCompact hook: compaction timestamp recording
+│   ├── post-compact.sh      # SessionStart hook: recovery data injection
+│   └── generate-report.sh   # HTML report generator (zero token cost)
 ├── skills/
-│   ├── init/SKILL.md        # /prompt-vault:init 스킬
-│   ├── log/SKILL.md         # /prompt-vault:log 스킬
-│   └── status/SKILL.md      # /prompt-vault:status 스킬
-└── templates/
-    ├── phase.md             # 페이즈 로그 템플릿
-    ├── index.md             # _index.md 초기 템플릿
-    └── claude-md-snippet.md # CLAUDE.md 삽입 프로토콜
+│   ├── init/SKILL.md        # /prompt-vault:init skill
+│   ├── log/SKILL.md         # /prompt-vault:log skill
+│   ├── status/SKILL.md      # /prompt-vault:status skill
+│   └── report/SKILL.md      # /prompt-vault:report skill
+├── templates/
+│   ├── phase.md             # Phase log template
+│   ├── index.md             # _index.md initial template
+│   ├── claude-md-snippet.md # CLAUDE.md injection protocol
+│   ├── report-summary.html  # Summary dashboard template
+│   └── report-detail.html   # Detail chat log template
+└── data/
+    └── palettes.json        # Curated 5-color palette sets
 ```
 
-### 설계 철학
+### Design Philosophy
 
-**금고(Vault) 메타포**:
-- 프롬프트와 작업 이력을 안전하게 보관
-- 컨텍스트가 압축되어도 진행 상태를 지킴
-- 자동화된 보호 메커니즘 (사용자 개입 최소화)
+**Vault Metaphor**:
+- Safely store prompts and work history
+- Protect progress state even through context compaction
+- Automated protection mechanisms (minimize user intervention)
 
-**주요 설계 원칙**:
+**Key Design Principles**:
 
-1. **멱등성(Idempotency)**: `/prompt-vault:init`는 여러 번 실행해도 안전
-2. **분리(Separation)**: 로그는 `.local/logs/`에 저장하여 git에서 제외
-3. **자동화(Automation)**: 훅 기반 자동 경고 및 복구
-4. **재사용성(Reusability)**: 모든 프로젝트에서 동일한 플러그인 사용
+1. **Idempotency**: `/prompt-vault:init` is safe to run multiple times
+2. **Separation**: Logs stored in `.local/logs/`, excluded from git
+3. **Automation**: Hook-based automatic warnings and recovery
+4. **Reusability**: Same plugin works across all projects
 
-## 플러그인 구조
+## Plugin Structure
 
-### 디렉토리 역할
+### Directory Roles
 
-| 디렉토리/파일 | 역할 | 접근 방식 |
-|--------------|------|----------|
-| `.claude-plugin/plugin.json` | 플러그인 메타데이터 (이름, 버전, 설명) | Claude Code가 로드 시 읽음 |
-| `hooks/hooks.json` | 훅 등록 파일 (Stop, PreCompact, SessionStart) | Claude Code가 훅 이벤트 발생 시 참조 |
-| `scripts/*.sh` | 훅 구현 스크립트 (Bash) | `hooks.json`에서 `command`로 참조 |
-| `skills/*/SKILL.md` | 스킬 정의 및 프롬프트 | 사용자가 `/prompt-vault:*` 실행 시 Claude에게 주입 |
-| `templates/*.md` | 마크다운 템플릿 파일 | `init`, `log` 스킬에서 파일 생성 시 사용 |
-| `templates/*.html` | HTML 리포트 템플릿 | `generate-report.sh`에서 플레이스홀더 치환 |
-| `data/palettes.json` | 큐레이션 5색 팔레트 세트 | `init` 스킬에서 랜덤 선택 (API fallback) |
+| Directory/File | Role | Access Method |
+|---------------|------|--------------|
+| `.claude-plugin/plugin.json` | Plugin metadata (name, version, description) | Read by Claude Code on load |
+| `hooks/hooks.json` | Hook registration file (Stop, PreCompact, SessionStart) | Referenced by Claude Code on hook events |
+| `scripts/*.sh` | Hook implementation scripts (Bash) | Referenced via `command` in `hooks.json` |
+| `skills/*/SKILL.md` | Skill definitions and prompts | Injected to Claude when user runs `/prompt-vault:*` |
+| `templates/*.md` | Markdown template files | Used by `init`, `log` skills for file creation |
+| `templates/*.html` | HTML report templates | Used by `generate-report.sh` for placeholder substitution |
+| `data/palettes.json` | Curated 5-color palette sets | Random selection by `init` skill (API fallback) |
 
-### 파일 크기 및 복잡도
+### File Size and Complexity
 
-| 파일 | 줄 수 | 복잡도 | 설명 |
-|------|-------|--------|------|
-| `plugin.json` | 9 | 낮음 | JSON 메타데이터만 |
-| `hooks.json` | 38 | 낮음 | 선언적 훅 등록 |
-| `context-check.sh` | 26 | 중간 | `jq`, `wc`, 조건문 포함 |
-| `pre-compact.sh` | 13 | 낮음 | 단순 파일 append |
-| `post-compact.sh` | 20 | 낮음 | `cat`, `ls`, 파이프 |
-| `init/SKILL.md` | 44 | 중간 | 6단계 초기화 절차 |
-| `log/SKILL.md` | 47 | 높음 | 번호 매김, 파일 생성, 인덱스 업데이트 |
-| `status/SKILL.md` | 9 | 낮음 | 단순 읽기 작업 |
-| `report/SKILL.md` | ~80 | 중간 | 리포트 생성 (스크립트 + 커스텀) |
-| `generate-report.sh` | ~200 | 높음 | awk 파싱, head/tail 치환, HTML 조립 |
-| `report-summary.html` | ~170 | 중간 | 요약 대시보드 템플릿 |
-| `report-detail.html` | ~200 | 중간 | 상세 채팅 로그 템플릿 |
-| `palettes.json` | ~15 | 낮음 | 5색 팔레트 JSON 배열 |
+| File | Lines | Complexity | Description |
+|------|-------|-----------|-------------|
+| `plugin.json` | 9 | Low | JSON metadata only |
+| `hooks.json` | 38 | Low | Declarative hook registration |
+| `context-check.sh` | 26 | Medium | `jq`, `wc`, conditionals |
+| `pre-compact.sh` | 13 | Low | Simple file append |
+| `post-compact.sh` | 20 | Low | `cat`, `ls`, pipes |
+| `init/SKILL.md` | 44 | Medium | 6-step initialization procedure |
+| `log/SKILL.md` | 47 | High | Numbering, file creation, index update |
+| `status/SKILL.md` | 9 | Low | Simple read operation |
+| `report/SKILL.md` | ~80 | Medium | Report generation (script + custom) |
+| `generate-report.sh` | ~200 | High | awk parsing, head/tail substitution, HTML assembly |
+| `report-summary.html` | ~170 | Medium | Summary dashboard template |
+| `report-detail.html` | ~200 | Medium | Detailed chat log template |
+| `palettes.json` | ~15 | Low | 5-color palette JSON array |
 
-## 핵심 구성 요소
+## Core Components
 
-### 1. 플러그인 매니페스트 (plugin.json)
+### 1. Plugin Manifest (plugin.json)
 
-**스키마**:
+**Schema**:
 ```json
 {
   "name": "prompt-vault",
@@ -109,109 +115,109 @@ prompt-vault/
 }
 ```
 
-**필드 설명**:
-- `name`: 플러그인 고유 ID (디렉토리명과 일치 권장)
-- `version`: 시맨틱 버저닝 (MAJOR.MINOR.PATCH)
-- `description`: Claude Code UI에 표시되는 설명
-- `keywords`: 검색 및 분류용 태그
+**Field Descriptions**:
+- `name`: Plugin unique ID (recommended to match directory name)
+- `version`: Semantic versioning (MAJOR.MINOR.PATCH)
+- `description`: Description shown in Claude Code UI
+- `keywords`: Tags for search and classification
 
-**버전 관리**:
-- `1.0.0`: 초기 릴리스 (현재)
-- `1.x.y`: 하위 호환성 유지 업데이트
-- `2.0.0`: 주요 API 변경 시
+**Version Management**:
+- `1.0.0`: Initial release (current)
+- `1.x.y`: Backward-compatible updates
+- `2.0.0`: Major API changes
 
-### 2. 훅 시스템 (hooks.json)
+### 2. Hook System (hooks.json)
 
-**훅 라이프사이클**:
+**Hook Lifecycle**:
 
-| 훅 타입 | 트리거 시점 | 실행 컨텍스트 | 주요 용도 |
-|---------|------------|--------------|----------|
-| `Stop` | Claude 응답 완료 후 | 매 응답마다 | 모니터링, 경고 |
-| `PreCompact` | 컨텍스트 압축 직전 | 압축 시작 전 | 상태 저장, 로깅 |
-| `SessionStart` | 세션 시작 시 | 새 세션 초기화 | 복구, 주입 |
+| Hook Type | Trigger Timing | Execution Context | Primary Use |
+|-----------|---------------|-------------------|-------------|
+| `Stop` | After Claude response completes | Every response | Monitoring, warnings |
+| `PreCompact` | Just before context compaction | Before compaction starts | State saving, logging |
+| `SessionStart` | On session start | New session initialization | Recovery, injection |
 
-**훅 타입**:
-- **`command`**: Bash 스크립트 실행
-- **`matcher`**: SessionStart 훅의 조건 (예: `"compact"` = 압축 후에만)
+**Hook Types**:
+- **`command`**: Execute Bash script
+- **`matcher`**: SessionStart hook condition (e.g., `"compact"` = only after compaction)
 
-**환경 변수 전달**:
-- `${CLAUDE_PLUGIN_ROOT}`: 플러그인 디렉토리 절대 경로
-- `$TRANSCRIPT_PATH`: 세션 transcript 파일 경로 (Stop 훅)
-- `$PWD`: 사용자의 프로젝트 디렉토리
+**Environment Variable Passing**:
+- `${CLAUDE_PLUGIN_ROOT}`: Plugin directory absolute path
+- `$TRANSCRIPT_PATH`: Session transcript file path (Stop hook)
+- `$PWD`: User's project directory
 
-### 3. 스킬 시스템 (SKILL.md)
+### 3. Skill System (SKILL.md)
 
-**SKILL.md 형식**:
+**SKILL.md Format**:
 ```markdown
 ---
 name: skill-name
-description: 스킬 설명 (한 줄)
+description: One-line skill description
 disable-model-invocation: true/false
-argument-hint: [인자 힌트]
+argument-hint: [argument hint]
 ---
 
-스킬 프롬프트 본문 (Claude에게 주입됨)
+Skill prompt body (injected to Claude)
 ```
 
-**YAML 프론트매터 필드**:
-- `name`: 스킬 이름 (디렉토리명과 일치해야 함)
-- `description`: 스킬 목적 및 동작 설명
+**YAML Frontmatter Fields**:
+- `name`: Skill name (must match directory name)
+- `description`: Skill purpose and behavior description
 - `disable-model-invocation`:
-  - `true`: 프롬프트만 주입, Claude가 모델 호출하지 않음 (읽기 전용 작업)
-  - `false`: Claude가 모델 호출하여 콘텐츠 생성 가능 (쓰기 작업)
-- `argument-hint`: 사용자에게 표시할 인자 힌트 (예: `[phase-title]`)
+  - `true`: Prompt injection only, Claude won't invoke model (read-only operations)
+  - `false`: Claude can invoke model to generate content (write operations)
+- `argument-hint`: Argument hint displayed to user (e.g., `[phase-title]`)
 
-**모델 호출 플래그**:
-- `init`: `disable-model-invocation: true` (파일 조작만)
-- `log`: `disable-model-invocation: false` (로그 콘텐츠 생성 필요)
-- `status`: `disable-model-invocation: false` (출력 포맷팅 필요)
+**Model Invocation Flags**:
+- `init`: `disable-model-invocation: true` (file manipulation only)
+- `log`: `disable-model-invocation: false` (log content generation required)
+- `status`: `disable-model-invocation: false` (output formatting required)
 
-## 훅 구현 상세
+## Hook Implementation Details
 
-### Stop 훅: context-check.sh
+### Stop Hook: context-check.sh
 
-**목적**: 매 응답 후 컨텍스트 사용량 체크 및 경고
+**Purpose**: Check context usage after every response and warn if threshold exceeded
 
-**데이터 흐름**:
+**Data Flow**:
 ```
-Claude 응답 → Stop 훅 트리거 → JSON stdin → context-check.sh
-                                              ↓
-                                       transcript_path 추출
-                                              ↓
-                                       파일 크기 측정
-                                              ↓
-                                       .config에서 threshold 읽기
-                                              ↓
-                                       크기 > threshold?
-                                       ↙ Yes     ↘ No
-                               경고 출력       종료 (0)
+Claude response → Stop hook trigger → JSON stdin → context-check.sh
+                                                      ↓
+                                               Extract transcript_path
+                                                      ↓
+                                               Measure file size
+                                                      ↓
+                                               Read threshold from .config
+                                                      ↓
+                                               size > threshold?
+                                               ↙ Yes      ↘ No
+                                        Output warning    Exit (0)
 ```
 
-**코드 분석**:
+**Code Analysis**:
 
 ```bash
 #!/bin/bash
-# 1. stdin에서 JSON 읽기
+# 1. Read JSON from stdin
 INPUT=$(cat)
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 
-# 2. transcript 파일 존재 확인
+# 2. Check transcript file existence
 if [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ]; then
   exit 0
 fi
 
-# 3. .config에서 임계값 읽기
+# 3. Read threshold from .config
 CONFIG=".local/logs/.config"
 if [ -f "$CONFIG" ]; then
   THRESHOLD=$(jq -r '.warn_bytes // 640000' "$CONFIG")
 else
-  THRESHOLD=640000  # 기본값: 200K 모델의 80%
+  THRESHOLD=640000  # Default: 80% of 200K model
 fi
 
-# 4. transcript 크기 측정
+# 4. Measure transcript size
 SIZE=$(wc -c < "$TRANSCRIPT" 2>/dev/null | tr -d ' ')
 
-# 5. 임계값 초과 시 경고
+# 5. Warn if threshold exceeded
 if [ "$SIZE" -gt "$THRESHOLD" ]; then
   PCT=$((SIZE * 100 / (THRESHOLD * 100 / 80)))
   echo "⚠️ [prompt-vault] Context ~${PCT}% used (${SIZE} bytes)."
@@ -219,30 +225,30 @@ if [ "$SIZE" -gt "$THRESHOLD" ]; then
 fi
 ```
 
-**성능**:
-- `jq` 파싱: ~10ms
-- `wc` 실행: ~20ms
-- 조건 평가: ~5ms
-- **총 오버헤드**: ~35-50ms (사용자 체감 불가)
+**Performance**:
+- `jq` parsing: ~10ms
+- `wc` execution: ~20ms
+- Conditional evaluation: ~5ms
+- **Total overhead**: ~35-50ms (imperceptible to user)
 
-**입력 예시**:
+**Input Example**:
 ```json
 {
   "transcript_path": "/Users/user/.claude/sessions/abc123.jsonl"
 }
 ```
 
-**출력 예시**:
+**Output Example**:
 ```
 ⚠️ [prompt-vault] Context ~85% used (680000 bytes).
 💡 Run /prompt-vault:log to save progress, then /compact to free context.
 ```
 
-### PreCompact 훅: pre-compact.sh
+### PreCompact Hook: pre-compact.sh
 
-**목적**: 압축 시점 감사 추적(audit trail)
+**Purpose**: Audit trail for compaction events
 
-**코드 분석**:
+**Code Analysis**:
 
 ```bash
 #!/bin/bash
@@ -258,15 +264,15 @@ if [ -d "$LOG_DIR" ]; then
 fi
 ```
 
-**동작**:
-1. `.local/logs/` 디렉토리 존재 확인
-2. 현재 타임스탬프 생성
-3. `phase-*.md` 파일 개수 카운트
-4. `compaction.log`에 append
+**Actions**:
+1. Check `.local/logs/` directory existence
+2. Generate current timestamp
+3. Count `phase-*.md` files
+4. Append to `compaction.log`
 
-**stdout 없음**: 이 훅은 사용자에게 출력하지 않음 (백그라운드 로깅)
+**No stdout**: This hook does not output to user (background logging)
 
-**compaction.log 예시**:
+**compaction.log Example**:
 ```
 ⚠️ Auto-compaction at 2026-02-12 14:32:10
 Phase count: 5
@@ -276,13 +282,13 @@ Phase count: 8
 ---
 ```
 
-### SessionStart 훅: post-compact.sh
+### SessionStart Hook: post-compact.sh
 
-**목적**: 압축 후 세션 재시작 시 진행 상태 복구
+**Purpose**: Recover progress state after compaction on session restart
 
-**핵심**: 이 훅의 **stdout이 Claude의 새 세션 컨텍스트로 주입됨**
+**Key**: This hook's **stdout is injected into Claude's new session context**
 
-**코드 분석**:
+**Code Analysis**:
 
 ```bash
 #!/bin/bash
@@ -290,7 +296,7 @@ LOG_DIR=".local/logs"
 if [ -d "$LOG_DIR" ]; then
   echo "=== Phase Progress (post-compaction recovery) ==="
 
-  # _index.md 출력
+  # Output _index.md
   if [ -f "$LOG_DIR/_index.md" ]; then
     cat "$LOG_DIR/_index.md"
   fi
@@ -298,7 +304,7 @@ if [ -d "$LOG_DIR" ]; then
   echo ""
   echo "=== Latest Phase Log ==="
 
-  # 가장 최근 phase-*.md 출력
+  # Output most recent phase-*.md
   LATEST=$(ls -t "$LOG_DIR"/phase-*.md 2>/dev/null | head -1)
   if [ -n "$LATEST" ]; then
     cat "$LATEST"
@@ -310,47 +316,47 @@ if [ -d "$LOG_DIR" ]; then
 fi
 ```
 
-**데이터 흐름**:
+**Data Flow**:
 ```
-압축 완료 → 새 세션 시작 → SessionStart 훅 (matcher: "compact")
-                                       ↓
-                               post-compact.sh 실행
-                                       ↓
-                       stdout: _index.md + latest phase
-                                       ↓
-                       Claude의 새 세션 컨텍스트로 주입
+Compaction complete → New session start → SessionStart hook (matcher: "compact")
+                                                  ↓
+                                          post-compact.sh executes
+                                                  ↓
+                                  stdout: _index.md + latest phase
+                                                  ↓
+                                  Injected into Claude's new session context
 ```
 
-**복구 데이터 크기**:
-- `_index.md`: ~500 bytes (페이즈 테이블)
-- `phase-*.md`: ~1-3 KB (최신 로그)
-- **총 주입**: ~2-5 KB (컨텍스트에 부담 없음)
+**Recovery Data Size**:
+- `_index.md`: ~500 bytes (phase table)
+- `phase-*.md`: ~1-3 KB (latest log)
+- **Total injection**: ~2-5 KB (no burden on context)
 
-**matcher 조건**:
-- `"matcher": "compact"`: 압축 후에만 실행
-- 일반 세션 시작 시에는 실행되지 않음
+**Matcher Condition**:
+- `"matcher": "compact"`: Runs only after compaction
+- Does NOT run on normal session starts
 
-## 스킬 구현 상세
+## Skill Implementation Details
 
 ### /prompt-vault:init
 
-**목적**: 프로젝트에 로깅 환경 초기화
+**Purpose**: Initialize logging environment for a project
 
-**6단계 절차**:
+**6-Step Procedure**:
 
-1. **`.local/logs/` 디렉토리 생성**
+1. **Create `.local/logs/` directory**
    ```bash
    mkdir -p .local/logs/
    ```
 
-2. **`.gitignore`에 `.local/` 추가**
-   - 기존 `.gitignore` 읽기
-   - `.local/` 행이 없으면 추가
-   - 멱등: 이미 있으면 스킵
+2. **Add `.local/` to `.gitignore`**
+   - Read existing `.gitignore`
+   - Add `.local/` line if not present
+   - Idempotent: skip if already exists
 
-3. **`.local/logs/_index.md` 초기화**
-   - `${CLAUDE_PLUGIN_ROOT}/templates/index.md` 복사
-   - 내용:
+3. **Initialize `.local/logs/_index.md`**
+   - Copy from `${CLAUDE_PLUGIN_ROOT}/templates/index.md`
+   - Contents:
      ```markdown
      # Phase Log Index
 
@@ -358,18 +364,18 @@ fi
      |---|-------|--------|------|---------|
      ```
 
-4. **`CLAUDE.md`에 Phase Logging Protocol 추가**
-   - `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md` 내용 삽입
-   - 기존 `CLAUDE.md`가 없으면 생성
-   - 이미 프로토콜 섹션이 있으면 스킵
+4. **Add Phase Logging Protocol to `CLAUDE.md`**
+   - Insert contents of `${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md`
+   - Create `CLAUDE.md` if it doesn't exist
+   - Skip if protocol section already present
 
-5. **`.local/logs/.config` 생성**
-   - 사용자에게 모델 확인 (환경 변수 또는 기본값)
-   - 임계값 계산:
+5. **Create `.local/logs/.config`**
+   - Confirm model with user (environment variable or default)
+   - Calculate thresholds:
      ```
      warn_bytes = context_window_tokens × 4 × (warn_percent / 100)
      ```
-   - JSON 형식으로 저장:
+   - Save in JSON format:
      ```json
      {
        "model": "claude-opus-4-6",
@@ -379,95 +385,95 @@ fi
      }
      ```
 
-6. **완료 메시지 출력**
+6. **Output completion message**
 
-**멱등성 보장**:
-- 각 단계에서 파일/디렉토리 존재 확인
-- 이미 있으면 스킵, 없으면 생성
-- 여러 번 실행해도 안전
+**Idempotency Guarantee**:
+- Each step checks file/directory existence
+- Skips if already exists, creates if not
+- Safe to run multiple times
 
-**환경 변수 활용**:
+**Environment Variable Usage**:
 ```markdown
-→ ${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md 내용 참조
+→ Reference ${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md contents
 ```
-Claude가 프롬프트 처리 시 `${CLAUDE_PLUGIN_ROOT}`를 플러그인 경로로 치환
+Claude substitutes `${CLAUDE_PLUGIN_ROOT}` with plugin path during prompt processing
 
-### /prompt-vault:log [제목]
+### /prompt-vault:log [title]
 
-**목적**: 완료된 작업을 페이즈 로그로 기록
+**Purpose**: Record completed work as a phase log
 
-**5단계 절차**:
+**5-Step Procedure**:
 
-1. **`.local/logs/` 확인**
-   - 없으면 생성 (또는 `/init` 안내)
+1. **Check `.local/logs/`**
+   - Create if missing (or guide to `/init`)
 
-2. **페이즈 번호 결정**
+2. **Determine phase number**
    ```bash
-   # 기존 phase-*.md 파일 glob
+   # Glob existing phase-*.md files
    EXISTING=$(ls -1 .local/logs/phase-*.md 2>/dev/null)
 
-   # 최대 번호 추출 + 1
+   # Extract max number + 1
    MAX_NUM=$(echo "$EXISTING" | sed 's/.*phase-\([0-9]*\)\.md/\1/' | sort -n | tail -1)
    NEXT_NUM=$((MAX_NUM + 1))
 
-   # 3자리 zero-padding
+   # 3-digit zero-padding
    PHASE_NUM=$(printf "%03d" $NEXT_NUM)
    ```
 
-3. **`phase-NNN.md` 생성**
-   - `${CLAUDE_PLUGIN_ROOT}/templates/phase.md` 기반
-   - 다음 내용 채우기:
-     - 제목: `$ARGUMENTS` 또는 Claude가 추론
+3. **Create `phase-NNN.md`**
+   - Based on `${CLAUDE_PLUGIN_ROOT}/templates/phase.md`
+   - Fill in the following:
+     - Title: `$ARGUMENTS` or inferred by Claude
      - Date: `YYYY-MM-DD`
-     - Session: 세션 ID
-     - User Prompt: 대화 이력에서 추출
-     - Actions: Claude가 수행한 작업 나열
-     - Results: 산출물 요약
-     - Decisions: 결정 사항
-     - Next: 다음 단계
-   - **모델 호출 활성화** (`disable-model-invocation: false`) → Claude가 콘텐츠 생성
+     - Session: session ID
+     - User Prompt: extracted from conversation history
+     - Actions: list of actions performed by Claude
+     - Results: output summary
+     - Decisions: decisions made
+     - Next: next steps
+   - **Model invocation enabled** (`disable-model-invocation: false`) → Claude generates content
 
-4. **`_index.md` 업데이트**
-   - 기존 테이블 읽기
-   - 새 행 추가:
+4. **Update `_index.md`**
+   - Read existing table
+   - Add new row:
      ```markdown
-     | NNN | 제목 | done | YYYY-MM-DD | 한줄 요약 |
+     | NNN | Title | done | YYYY-MM-DD | One-line summary |
      ```
-   - 파일 다시 쓰기
+   - Rewrite file
 
-5. **완료 메시지 출력**
+5. **Output completion message**
    ```
-   ✓ Logged phase 003: "제목"
+   ✓ Logged phase 003: "Title"
    ✓ Updated _index.md
    ```
 
-**페이즈 번호 매김 특성**:
-- 기존 파일 개수 기반이 아닌 **최대 번호 + 1**
-- 파일 삭제 시 번호 건너뛸 수 있음 (예: 001, 003, 004)
-- 의도적 설계: 페이즈 삭제/재정렬 가능
+**Phase Numbering Characteristics**:
+- Based on **max existing number + 1**, not file count
+- Gaps may occur when files are deleted (e.g., 001, 003, 004)
+- Intentional design: allows phase deletion/reordering
 
-**모델 생성 콘텐츠**:
-- User Prompt: 대화 이력 참조
-- Actions: 파일 생성/수정 이력 추출
-- Results: 산출물 요약 생성
-- Decisions: 맥락에서 결정 사항 추론
+**Model-Generated Content**:
+- User Prompt: references conversation history
+- Actions: extracts file creation/modification history
+- Results: generates output summary
+- Decisions: infers decisions from context
 
 ### /prompt-vault:status
 
-**목적**: 페이즈 진행 상황 요약 표시
+**Purpose**: Display phase progress summary
 
-**간단한 구현**:
+**Simple Implementation**:
 
 ```markdown
-`.local/logs/_index.md`를 읽어 현재까지의 페이즈 진행 상태를 요약 표시한다.
-파일이 없으면 `/prompt-vault:init`을 안내한다.
+Read `.local/logs/_index.md` and display a summary of phase progress to date.
+If the file doesn't exist, guide to `/prompt-vault:init`.
 ```
 
-**오류 처리**:
-- `_index.md` 없음 → "Run `/prompt-vault:init` first"
-- `.local/logs/` 없음 → 동일 안내
+**Error Handling**:
+- `_index.md` not found → "Run `/prompt-vault:init` first"
+- `.local/logs/` not found → Same guidance
 
-**출력 형식**:
+**Output Format**:
 ```markdown
 # Phase Log Index
 
@@ -481,111 +487,111 @@ Total: 2 phases completed
 
 ### /prompt-vault:report
 
-**목적**: 페이즈 로그를 시각화된 HTML 리포트로 변환
+**Purpose**: Convert phase logs into visualized HTML reports
 
-**듀얼 트랙 아키텍처**:
-
-```
-트랙 1 (기본): 셸 스크립트 — 토큰 비용 제로
-  /prompt-vault:report → scripts/generate-report.sh → HTML 파일 생성
-
-트랙 2 (커스텀): Claude 모델 호출
-  /prompt-vault:report custom → 기본 리포트 + Claude 보강
-```
-
-**generate-report.sh 핵심 로직**:
-
-1. **설정 읽기**: `jq`로 `.config`에서 `project_name`, `palette` 등 읽기
-2. **_index.md 파싱**: `awk`로 테이블 행 추출, HTML `<tr>` 및 타임라인 카드 조립
-3. **phase-*.md 파싱**: `awk` 범위 패턴(`/^## Section$/,/^## [A-Z]/`)으로 멀티라인 섹션 추출
-4. **템플릿 치환**:
-   - 단순 플레이스홀더(`{{PROJECT_NAME}}` 등): `sed`로 한 줄 치환
-   - 반복 구간(`{{PHASE_TABLE}}` 등): `head/tail` 분할 + `cat` 조립 (역순 치환)
-
-**파서 선택 근거**:
-- `awk`: 멀티라인 섹션 파싱 (sed의 범위 패턴 edge case 회피)
-- `jq`: JSON 설정 읽기 (기존 훅과 동일)
-- `head/tail + cat`: 템플릿 치환 (sed 멀티라인보다 안정적)
-
-**생성되는 파일**:
-- `.local/logs/report-summary.html` — 프로젝트 요약 대시보드 (타임라인, 통계, 인덱스)
-- `.local/logs/report-detail.html` — 페이즈별 채팅 버블 UI (프롬프트/응답/결정)
-
-**5색 팔레트 시스템**:
-- `.config.palette` 배열에서 5색 읽기 → CSS 변수 `--color-primary` ~ `--color-muted`로 주입
-- 팔레트 소스: init 시 colormind.io API 호출 (fallback: `data/palettes.json`)
-- 레이아웃: Tailwind CSS gray 스케일 + 5색 팔레트 포인트
-
-## 데이터 흐름
-
-### 정상 워크플로우 (경고만)
+**Dual-Track Architecture**:
 
 ```
-사용자 프롬프트
+Track 1 (Default): Shell script — zero token cost
+  /prompt-vault:report → scripts/generate-report.sh → HTML files generated
+
+Track 2 (Custom): Claude model invocation
+  /prompt-vault:report custom → base report + Claude enhancement
+```
+
+**generate-report.sh Core Logic**:
+
+1. **Read config**: Read `project_name`, `palette`, etc. from `.config` via `jq`
+2. **Parse _index.md**: Extract table rows via `awk`, assemble HTML `<tr>` and timeline cards
+3. **Parse phase-*.md**: Extract multi-line sections via `awk` range patterns (`/^## Section$/,/^## [A-Z]/`)
+4. **Template substitution**:
+   - Simple placeholders (`{{PROJECT_NAME}}`, etc.): single-line substitution via `sed`
+   - Repeating blocks (`{{PHASE_TABLE}}`, etc.): `head/tail` split + `cat` assembly (reverse-order substitution)
+
+**Parser Choice Rationale**:
+- `awk`: Multi-line section parsing (avoids sed range pattern edge cases)
+- `jq`: JSON config reading (same as existing hooks)
+- `head/tail + cat`: Template substitution (more stable than sed multi-line)
+
+**Generated Files**:
+- `.local/logs/report-summary.html` — Project summary dashboard (timeline, stats, index)
+- `.local/logs/report-detail.html` — Per-phase chat bubble UI (prompts/responses/decisions)
+
+**5-Color Palette System**:
+- Read 5 colors from `.config.palette` array → inject as CSS variables `--color-primary` through `--color-muted`
+- Palette source: colormind.io API call during init (fallback: `data/palettes.json`)
+- Layout: Tailwind CSS gray scale + 5-color palette accents
+
+## Data Flow
+
+### Normal Workflow (Warning Only)
+
+```
+User prompt
     ↓
-Claude 응답 생성
+Claude generates response
     ↓
-Stop 훅 트리거
+Stop hook triggers
     ↓
-context-check.sh 실행
+context-check.sh executes
     ↓
-transcript 크기 < 임계값?
+transcript size < threshold?
     ↓ No
-경고 출력
+Output warning
     ↓
-사용자에게 표시
+Display to user
 ```
 
-### 압축 워크플로우 (전체 사이클)
+### Compaction Workflow (Full Cycle)
 
 ```
-사용자: /prompt-vault:log "제목"
+User: /prompt-vault:log "title"
     ↓
-Claude: phase-NNN.md 생성, _index.md 업데이트
+Claude: create phase-NNN.md, update _index.md
     ↓
-사용자: /compact
+User: /compact
     ↓
-PreCompact 훅 트리거
+PreCompact hook triggers
     ↓
-pre-compact.sh: compaction.log 기록
+pre-compact.sh: record to compaction.log
     ↓
-Claude: 컨텍스트 압축 (대화 요약)
+Claude: context compaction (conversation summary)
     ↓
-새 세션 시작 (matcher: "compact")
+New session start (matcher: "compact")
     ↓
-SessionStart 훅 트리거
+SessionStart hook triggers
     ↓
-post-compact.sh: _index.md + latest phase 출력
+post-compact.sh: output _index.md + latest phase
     ↓
-stdout → Claude의 새 세션 컨텍스트
+stdout → Claude's new session context
     ↓
-Claude: 복구된 상태로 준비 완료
+Claude: ready with recovered state
     ↓
-사용자: 작업 재개
+User: resume work
 ```
 
-## 환경 변수
+## Environment Variables
 
-### Claude Code 제공 변수
+### Variables Provided by Claude Code
 
-| 변수 | 제공 시점 | 값 예시 | 용도 |
-|------|----------|---------|------|
-| `${CLAUDE_PLUGIN_ROOT}` | 스킬 프롬프트 처리 시 | `/Users/user/prompt-vault` | 템플릿 경로 참조 |
-| `$TRANSCRIPT_PATH` | Stop 훅 실행 시 | `/Users/user/.claude/sessions/abc.jsonl` | transcript 크기 측정 |
-| `$PWD` | 모든 훅/스킬 | `/Users/user/my-project` | 프로젝트 디렉토리 |
+| Variable | When Provided | Example Value | Purpose |
+|----------|--------------|---------------|---------|
+| `${CLAUDE_PLUGIN_ROOT}` | During skill prompt processing | `/Users/user/prompt-vault` | Template path reference |
+| `$TRANSCRIPT_PATH` | During Stop hook execution | `/Users/user/.claude/sessions/abc.jsonl` | Transcript size measurement |
+| `$PWD` | All hooks/skills | `/Users/user/my-project` | Project directory |
 
-### 플러그인 내부 변수
+### Plugin Internal Variables
 
-| 변수 | 스크립트 | 용도 |
-|------|---------|------|
-| `LOG_DIR` | 모든 `.sh` | `.local/logs` 경로 상수 |
-| `CONFIG` | `context-check.sh` | `.local/logs/.config` 경로 |
-| `THRESHOLD` | `context-check.sh` | 임계값 바이트 수 |
-| `PHASE_NUM` | (스킬 로직) | 다음 페이즈 번호 (001, 002, ...) |
+| Variable | Script | Purpose |
+|----------|--------|---------|
+| `LOG_DIR` | All `.sh` | `.local/logs` path constant |
+| `CONFIG` | `context-check.sh` | `.local/logs/.config` path |
+| `THRESHOLD` | `context-check.sh` | Threshold byte count |
+| `PHASE_NUM` | (Skill logic) | Next phase number (001, 002, ...) |
 
-## 설정 스키마
+## Configuration Schema
 
-### .config JSON 스키마
+### .config JSON Schema
 
 ```json
 {
@@ -595,25 +601,25 @@ Claude: 복구된 상태로 준비 완료
   "properties": {
     "model": {
       "type": "string",
-      "description": "Claude 모델 ID",
+      "description": "Claude model ID",
       "examples": ["claude-opus-4-6", "claude-sonnet-4-5-20250929"]
     },
     "context_window_tokens": {
       "type": "integer",
-      "description": "컨텍스트 윈도우 크기 (토큰 수)",
+      "description": "Context window size (token count)",
       "minimum": 1,
       "examples": [200000, 1000000]
     },
     "warn_percent": {
       "type": "integer",
-      "description": "경고 발생 임계값 (퍼센트)",
+      "description": "Warning threshold (percentage)",
       "minimum": 1,
       "maximum": 100,
       "examples": [80, 70]
     },
     "warn_bytes": {
       "type": "integer",
-      "description": "경고 발생 임계값 (바이트 수)",
+      "description": "Warning threshold (byte count)",
       "minimum": 1,
       "examples": [640000, 3200000]
     }
@@ -621,30 +627,30 @@ Claude: 복구된 상태로 준비 완료
 }
 ```
 
-### 임계값 계산
+### Threshold Calculation
 
-**공식**:
+**Formula**:
 ```
 warn_bytes = context_window_tokens × bytes_per_token × (warn_percent / 100)
 ```
 
-**bytes_per_token 추정**:
-- 일반적으로 1 토큰 ≈ 4 바이트 (영어 기준)
-- 한글: 1 토큰 ≈ 2-3 바이트 (더 많은 문자 인코딩)
-- **보수적 추정**: 4 바이트 사용 (안전 마진)
+**bytes_per_token Estimation**:
+- Generally 1 token ≈ 4 bytes (English basis)
+- Korean: 1 token ≈ 2-3 bytes (more character encoding)
+- **Conservative estimate**: 4 bytes used (safety margin)
 
-**예시**:
+**Examples**:
 ```
-200K 모델, 80% 임계값:
+200K model, 80% threshold:
 200,000 × 4 × 0.8 = 640,000 bytes
 
-1M 모델, 80% 임계값:
+1M model, 80% threshold:
 1,000,000 × 4 × 0.8 = 3,200,000 bytes
 ```
 
-## 템플릿 시스템
+## Template System
 
-### phase.md 구조
+### phase.md Structure
 
 ```markdown
 # Phase NNN: TITLE
@@ -653,31 +659,31 @@ warn_bytes = context_window_tokens × bytes_per_token × (warn_percent / 100)
 - **Session**: SESSION_ID
 
 ## User Prompt
-> 사용자의 원본 요청을 가능한 원문 그대로 기록
+> Record the user's original request as verbatim as possible
 
 ## Actions
-- Claude가 수행한 주요 작업을 시간순으로 나열
-- 사용한 도구, 조회한 파일, 생성/수정한 파일 포함
+- List major actions performed by Claude in chronological order
+- Include tools used, files read, files created/modified
 
 ## Results
-- 산출물 요약 (생성된 파일 경로, 핵심 발견사항)
-- 주요 데이터나 수치
+- Output summary (generated file paths, key findings)
+- Key data or metrics
 
 ## Decisions
-- 내려진 결정 사항과 그 이유
+- Decisions made and their rationale
 
 ## Next
-- 다음 단계 또는 미결 사항
+- Next steps or pending items
 ```
 
-**섹션 목적**:
-- **User Prompt**: 요구사항 추적
-- **Actions**: 실행 이력 (재현 가능성)
-- **Results**: 산출물 검증
-- **Decisions**: 아키텍처 결정 기록 (ADR)
-- **Next**: 작업 연속성
+**Section Purposes**:
+- **User Prompt**: Requirements tracking
+- **Actions**: Execution history (reproducibility)
+- **Results**: Output verification
+- **Decisions**: Architecture Decision Records (ADR)
+- **Next**: Work continuity
 
-### index.md 구조
+### index.md Structure
 
 ```markdown
 # Phase Log Index
@@ -686,45 +692,45 @@ warn_bytes = context_window_tokens × bytes_per_token × (warn_percent / 100)
 |---|-------|--------|------|---------|
 ```
 
-**컬럼 의미**:
-- `#`: 페이즈 번호 (001, 002, ...)
-- `Title`: 페이즈 제목
-- `Status`: 상태 (일반적으로 `done`, 확장 가능: `in-progress`, `blocked`)
-- `Date`: 완료 일자 (YYYY-MM-DD)
-- `Summary`: 한 줄 요약 (30-50자)
+**Column Meanings**:
+- `#`: Phase number (001, 002, ...)
+- `Title`: Phase title
+- `Status`: Status (typically `done`, extensible: `in-progress`, `blocked`)
+- `Date`: Completion date (YYYY-MM-DD)
+- `Summary`: One-line summary (30-50 characters)
 
 ### claude-md-snippet.md
 
-**프로토콜 내용**:
+**Protocol Content**:
 ```markdown
 # Phase Logging Protocol (prompt-vault)
 
-## 규칙
-- 의미 있는 작업 단위(페이즈)가 완료되면 `/prompt-vault:log [제목]`으로 기록
-- 사용자가 명시적으로 호출하거나, Claude가 페이즈 완료를 인지하면 자동 제안
-- 컨텍스트 압축 전에는 반드시 현재 작업을 로깅할 것
+## Rules
+- When a meaningful unit of work (phase) is complete, log it with `/prompt-vault:log [title]`
+- Suggest logging when you detect a phase is complete, or when the user explicitly invokes it
+- Always log current work before context compaction
 
-## 컨텍스트 관리
-- 대화가 길어지면 `/compact` 전에 `/prompt-vault:log`로 저장
-- 압축 후에는 `.local/logs/_index.md` 참조하여 진행 상태 파악
-- 서브에이전트(Task)를 활용하여 메인 컨텍스트 부하 경감
-- `/prompt-vault:status`로 현재 진행 상태 확인 가능
+## Context Management
+- Before `/compact`, save progress with `/prompt-vault:log`
+- After compaction, refer to `.local/logs/_index.md` for progress state
+- Use sub-agents (Task) to reduce main context load
+- Check current progress with `/prompt-vault:status`
 ```
 
-**용도**: 대상 프로젝트의 `CLAUDE.md`에 삽입하여 Claude가 로깅 프로토콜을 따르도록 유도
+**Purpose**: Inserted into the target project's `CLAUDE.md` to guide Claude to follow the logging protocol
 
-## 커스터마이징 가이드
+## Customization Guide
 
-### 1. 임계값 변경
+### 1. Changing Thresholds
 
-**목적**: 경고를 더 일찍 또는 더 늦게 받기
+**Purpose**: Receive warnings earlier or later
 
-**방법**:
+**Method**:
 ```bash
 vim .local/logs/.config
 ```
 
-**70%로 낮추기** (더 일찍 경고):
+**Lower to 70%** (earlier warnings):
 ```json
 {
   "model": "claude-opus-4-6",
@@ -734,7 +740,7 @@ vim .local/logs/.config
 }
 ```
 
-**90%로 높이기** (더 늦게 경고):
+**Raise to 90%** (later warnings):
 ```json
 {
   "warn_percent": 90,
@@ -742,16 +748,16 @@ vim .local/logs/.config
 }
 ```
 
-### 2. 맞춤 페이즈 형식
+### 2. Custom Phase Format
 
-**목적**: 조직의 문서화 표준에 맞추기
+**Purpose**: Adapt to your organization's documentation standards
 
-**방법**:
+**Method**:
 ```bash
 vim ~/Downloads/prompt-vault/templates/phase.md
 ```
 
-**예시: 이슈 트래커 링크 추가**:
+**Example: Adding Issue Tracker Link**:
 ```markdown
 # Phase NNN: TITLE
 
@@ -762,17 +768,17 @@ vim ~/Downloads/prompt-vault/templates/phase.md
 ...
 ```
 
-### 3. 새 훅 추가
+### 3. Adding New Hooks
 
-**목적**: 압축 후 Slack 알림 등 커스텀 동작
+**Purpose**: Custom actions like Slack notifications after compaction
 
-**방법**:
+**Method**:
 ```bash
-# 1. 스크립트 작성
+# 1. Write the script
 vim ~/Downloads/prompt-vault/scripts/notify-slack.sh
 
 #!/bin/bash
-# Slack webhook으로 압축 알림 전송
+# Send compaction notification via Slack webhook
 WEBHOOK_URL="https://hooks.slack.com/services/..."
 curl -X POST -H 'Content-type: application/json' \
   --data '{"text":"Context compacted!"}' \
@@ -780,10 +786,10 @@ curl -X POST -H 'Content-type: application/json' \
 ```
 
 ```bash
-# 2. 실행 권한 부여
+# 2. Grant execute permission
 chmod +x ~/Downloads/prompt-vault/scripts/notify-slack.sh
 
-# 3. hooks.json 편집
+# 3. Edit hooks.json
 vim ~/Downloads/prompt-vault/hooks/hooks.json
 ```
 
@@ -810,16 +816,16 @@ vim ~/Downloads/prompt-vault/hooks/hooks.json
 }
 ```
 
-### 4. 다국어 지원
+### 4. Multilingual Support
 
-**목적**: 페이즈 로그를 영어로 작성
+**Purpose**: Write phase logs in English
 
-**방법**:
+**Method**:
 ```bash
 vim ~/Downloads/prompt-vault/templates/phase.md
 ```
 
-**영어 템플릿**:
+**English Template**:
 ```markdown
 # Phase NNN: TITLE
 
@@ -842,51 +848,51 @@ vim ~/Downloads/prompt-vault/templates/phase.md
 - Next steps or pending items
 ```
 
-## 확장 포인트
+## Extension Points
 
-### 1. 페이즈 내보내기 (HTML/PDF)
+### 1. Phase Export (HTML/PDF)
 
-**아이디어**: 로그를 웹 페이지 또는 PDF로 변환
+**Idea**: Convert logs to web pages or PDF
 
-**구현 예시**:
+**Implementation Example**:
 ```bash
-# Pandoc 사용
+# Using Pandoc
 pandoc .local/logs/phase-*.md -o project-report.pdf
 
-# 또는 새 스킬 추가
+# Or add a new skill
 /prompt-vault:export [format]
-# 내부적으로 pandoc 호출
+# Internally calls pandoc
 ```
 
-### 2. 페이즈 검색 기능
+### 2. Phase Search Feature
 
-**아이디어**: 키워드로 과거 페이즈 검색
+**Idea**: Search past phases by keyword
 
-**구현 예시**:
+**Implementation Example**:
 ```bash
-# 새 스킬: /prompt-vault:search [keyword]
-# 내부적으로 grep -r "[keyword]" .local/logs/
-# 결과를 포맷팅하여 출력
+# New skill: /prompt-vault:search [keyword]
+# Internally runs grep -r "[keyword]" .local/logs/
+# Formats and outputs results
 ```
 
-### 3. Git 통합
+### 3. Git Integration
 
-**아이디어**: 각 페이즈를 자동으로 git 커밋
+**Idea**: Auto-commit each phase to git
 
-**구현 예시**:
+**Implementation Example**:
 ```bash
-# /prompt-vault:log 후 자동 커밋
+# Auto-commit after /prompt-vault:log
 git add .local/logs/
-git commit -m "phase-NNN: [제목]"
+git commit -m "phase-NNN: [title]"
 ```
 
-**주의**: 민감 정보 포함 가능, 선택적 기능으로 제공
+**Caution**: May contain sensitive information; provide as opt-in feature
 
-### 4. 팀 협업 기능
+### 4. Team Collaboration Feature
 
-**아이디어**: 팀원별 페이즈 태깅
+**Idea**: Per-member phase tagging
 
-**구현 예시**:
+**Implementation Example**:
 ```markdown
 # Phase NNN: TITLE
 
@@ -895,11 +901,11 @@ git commit -m "phase-NNN: [제목]"
 ...
 ```
 
-## 테스팅 및 디버깅
+## Testing and Debugging
 
-### 수동 테스팅 워크플로우
+### Manual Testing Workflow
 
-**1. 초기화 테스트**:
+**1. Initialization Test**:
 ```bash
 cd ~/test-project
 claude --plugin-dir ~/Downloads/prompt-vault
@@ -909,156 +915,156 @@ cat .local/logs/.config
 cat .local/logs/_index.md
 ```
 
-**2. 로깅 테스트**:
+**2. Logging Test**:
 ```bash
-/prompt-vault:log "테스트 페이즈"
+/prompt-vault:log "Test Phase"
 ls .local/logs/phase-*.md
 cat .local/logs/phase-001.md
 cat .local/logs/_index.md
 ```
 
-**3. 상태 테스트**:
+**3. Status Test**:
 ```bash
 /prompt-vault:status
 ```
 
-**4. 훅 테스트**:
+**4. Hook Test**:
 ```bash
-# Stop 훅 수동 실행
+# Manual Stop hook execution
 echo '{"transcript_path":"/path/to/transcript.jsonl"}' | \
   ~/Downloads/prompt-vault/scripts/context-check.sh
 
-# PreCompact 훅
+# PreCompact hook
 ~/Downloads/prompt-vault/scripts/pre-compact.sh
 cat .local/logs/compaction.log
 
-# SessionStart 훅
+# SessionStart hook
 ~/Downloads/prompt-vault/scripts/post-compact.sh
 ```
 
-### 훅 디버깅
+### Hook Debugging
 
-**echo 문 추가**:
+**Adding echo statements**:
 ```bash
 vim ~/Downloads/prompt-vault/scripts/context-check.sh
 
-# 디버그 출력 추가
+# Add debug output
 echo "DEBUG: TRANSCRIPT=$TRANSCRIPT" >&2
 echo "DEBUG: SIZE=$SIZE, THRESHOLD=$THRESHOLD" >&2
 ```
 
-**stderr로 로깅**:
-- stdout은 Claude에게 표시
-- stderr는 디버그용 (`>&2`)
+**Logging to stderr**:
+- stdout is displayed to Claude
+- stderr is for debugging (`>&2`)
 
-**독립 실행 테스트**:
+**Standalone Execution Test**:
 ```bash
-# 가짜 transcript 생성
+# Create fake transcript
 dd if=/dev/zero of=/tmp/test-transcript bs=1024 count=700  # 700KB
 
-# 수동 테스트
+# Manual test
 echo '{"transcript_path":"/tmp/test-transcript"}' | \
   ~/Downloads/prompt-vault/scripts/context-check.sh
 ```
 
-### 일반적인 문제
+### Common Issues
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| `jq: command not found` | jq 미설치 | `brew install jq` |
-| `Permission denied: .local/logs/` | 쓰기 권한 없음 | `chmod +w .local/logs/` |
-| 경고 없음 | `.config` 없음 또는 임계값 너무 높음 | `/init` 재실행 또는 임계값 조정 |
-| 복구 없음 | 압축 전 로깅 안 함 | 압축 전 반드시 `/log` 실행 |
-| 페이즈 번호 중복 | 경쟁 조건 (동시 로깅) | 순차 실행 권장 |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `jq: command not found` | jq not installed | `brew install jq` |
+| `Permission denied: .local/logs/` | No write permission | `chmod +w .local/logs/` |
+| No warnings | `.config` missing or threshold too high | Re-run `/init` or adjust threshold |
+| No recovery | Didn't log before compaction | Always run `/log` before compaction |
+| Duplicate phase numbers | Race condition (concurrent logging) | Use sequential execution |
 
-## 성능 고려사항
+## Performance Considerations
 
-### Stop 훅 오버헤드
+### Stop Hook Overhead
 
-**측정**:
+**Measurement**:
 ```bash
 time echo '{"transcript_path":"/path/to/transcript"}' | \
   scripts/context-check.sh
 ```
 
-**결과**:
-- `jq` 파싱: ~10ms
-- `wc` 실행: ~20ms
-- 조건 평가: ~5ms
-- **총**: 35-50ms
+**Results**:
+- `jq` parsing: ~10ms
+- `wc` execution: ~20ms
+- Conditional evaluation: ~5ms
+- **Total**: 35-50ms
 
-**영향**: 사용자 체감 불가 (Claude 응답 생성 시간이 수 초)
+**Impact**: Imperceptible to user (Claude response generation takes several seconds)
 
-### 로그 작업 시간
+### Log Operation Time
 
-**측정**:
-- 파일 생성: ~100ms
-- 모델 호출 (콘텐츠 생성): 2-5초
-- 인덱스 업데이트: ~50ms
-- **총**: 2-5초
+**Measurement**:
+- File creation: ~100ms
+- Model invocation (content generation): 2-5 seconds
+- Index update: ~50ms
+- **Total**: 2-5 seconds
 
-**병목**: 모델 호출 (불가피, 품질 우선)
+**Bottleneck**: Model invocation (unavoidable, quality prioritized)
 
-### 복구 데이터 크기
+### Recovery Data Size
 
-**주입 데이터**:
-- `_index.md`: ~500 bytes (10개 페이즈 기준)
+**Injected Data**:
+- `_index.md`: ~500 bytes (for 10 phases)
 - `phase-*.md`: ~1-3 KB
-- **총**: ~2-5 KB
+- **Total**: ~2-5 KB
 
-**영향**: 컨텍스트 윈도우의 ~0.01% (무시 가능)
+**Impact**: ~0.01% of context window (negligible)
 
-## 보안 및 개인정보
+## Security and Privacy
 
-### 로컬 저장소
+### Local Storage
 
-- 모든 로그는 사용자 기기에만 저장
-- 네트워크 전송 없음
-- 외부 서비스 의존성 없음
+- All logs stored on user's device only
+- No network transmission
+- No external service dependencies
 
-### Git 안전
+### Git Safety
 
-- `.local/` 디렉토리는 `.gitignore`에 자동 추가
-- 실수로 커밋되는 것 방지
-- 민감한 API 키, 내부 로직 보호
+- `.local/` directory auto-added to `.gitignore`
+- Prevents accidental commits
+- Protects sensitive API keys and internal logic
 
-### 사용자 책임
+### User Responsibility
 
-**경고**: 로그에는 다음이 포함될 수 있음:
-- 사용자 프롬프트 (요구사항)
-- 생성된 코드 (내부 로직)
-- 결정 사항 (아키텍처 비밀)
-- 파일 경로 (프로젝트 구조)
+**Warning**: Logs may contain:
+- User prompts (requirements)
+- Generated code (internal logic)
+- Decisions (architecture secrets)
+- File paths (project structure)
 
-**권장사항**:
-- 민감한 정보는 로그에 포함하지 않기
-- Git에 커밋 전 검토
-- 팀 공유 시 민감 정보 제거
+**Recommendations**:
+- Don't include sensitive information in logs
+- Review before committing to Git
+- Remove sensitive info when sharing with team
 
-## 기여 가이드
+## Contributing Guide
 
-### 개발 설정
+### Development Setup
 
 ```bash
-# 1. 저장소 클론
+# 1. Clone the repository
 git clone https://github.com/lemon-etvibe/prompt-vault.git
 cd prompt-vault
 
-# 2. 로컬 테스트
+# 2. Local testing
 claude --plugin-dir $(pwd)
 
-# 3. 코드 스타일 검사
+# 3. Code style check
 shellcheck scripts/*.sh
 ```
 
-### PR 가이드라인
+### PR Guidelines
 
-**브랜치 명명**:
-- `feature/add-export-skill`: 새 기능
-- `fix/hook-permission-error`: 버그 수정
-- `docs/architecture-update`: 문서 개선
+**Branch Naming**:
+- `feature/add-export-skill`: New feature
+- `fix/hook-permission-error`: Bug fix
+- `docs/architecture-update`: Documentation improvement
 
-**커밋 메시지**:
+**Commit Messages**:
 ```
 <type>: <subject>
 
@@ -1067,14 +1073,14 @@ shellcheck scripts/*.sh
 <footer>
 ```
 
-**타입**:
-- `feat`: 새 기능
-- `fix`: 버그 수정
-- `docs`: 문서만 변경
-- `refactor`: 코드 구조 개선
-- `test`: 테스트 추가
+**Types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation only
+- `refactor`: Code structure improvement
+- `test`: Add tests
 
-**예시**:
+**Example**:
 ```
 feat: add /prompt-vault:search skill
 
@@ -1084,57 +1090,57 @@ Supports regex patterns and outputs formatted results.
 Closes #42
 ```
 
-### 코드 스타일
+### Code Style
 
 **Bash**:
-- `shellcheck` 통과 필수
-- 변수는 대문자 (`PHASE_NUM`)
-- 에러 처리: `set -e` 또는 명시적 체크
+- Must pass `shellcheck`
+- Variables in UPPERCASE (`PHASE_NUM`)
+- Error handling: `set -e` or explicit checks
 
-**마크다운**:
-- CommonMark 준수
-- 코드 블록에 언어 힌트 (```bash, ```json)
-- 테이블 정렬
+**Markdown**:
+- CommonMark compliant
+- Language hints in code blocks (```bash, ```json)
+- Aligned tables
 
-## 버전 히스토리
+## Version History
 
 ### v1.0.0 (2026-02-12)
 
-**초기 릴리스**:
-- ✅ 3개 스킬: `init`, `log`, `status`
-- ✅ 3개 훅: Stop, PreCompact, SessionStart
-- ✅ 템플릿 시스템
-- ✅ 컨텍스트 임계값 자동 경고
-- ✅ 압축 후 자동 복구
-- ✅ Git 안전 저장
+**Initial Release**:
+- ✅ 3 skills: `init`, `log`, `status`
+- ✅ 3 hooks: Stop, PreCompact, SessionStart
+- ✅ Template system
+- ✅ Context threshold auto-warning
+- ✅ Post-compaction auto-recovery
+- ✅ Git-safe storage
 
-**알려진 제한**:
-- 페이즈 검색 기능 없음 (수동 `grep` 필요)
-- PDF 내보내기 미지원
-- Git 자동 커밋 미지원
+**Known Limitations**:
+- No phase search feature (manual `grep` required)
+- No PDF export support
+- No Git auto-commit
 
 ### v1.1.0 (2026-02-26)
 
-**HTML 리포팅 기능 추가**:
-- ✅ `/prompt-vault:report` 스킬 (summary/detail/all/custom)
-- ✅ `generate-report.sh` 셸 스크립트 (토큰 비용 제로)
-- ✅ 요약 대시보드 + 상세 채팅 로그 HTML 템플릿
-- ✅ Coolors 기반 5색 팔레트 시스템 (colormind.io API + fallback)
-- ✅ `.config` 확장: `project_name`, `project_description`, `palette`
-- ✅ `init` 스킬 업데이트: 프로젝트 메타 + 랜덤 팔레트 배정
+**HTML Reporting Feature**:
+- ✅ `/prompt-vault:report` skill (summary/detail/all/custom)
+- ✅ `generate-report.sh` shell script (zero token cost)
+- ✅ Summary dashboard + detailed chat log HTML templates
+- ✅ Coolors-based 5-color palette system (colormind.io API + fallback)
+- ✅ `.config` extended: `project_name`, `project_description`, `palette`
+- ✅ `init` skill update: project meta + random palette assignment
 
-**향후 계획**:
-- v1.2.0: PreCompact 훅 리포트 자동 갱신, 출력 경로 커스터마이징
-- v2.0.0: 다중 사용자 협업 기능
+**Future Plans**:
+- v1.2.0: PreCompact hook auto-report refresh, output path customization
+- v2.0.0: Multi-user collaboration features
 
-## 참조
+## References
 
-- **Claude Code 플러그인 문서**: https://docs.anthropic.com/claude-code/plugins
-- **훅 시스템 사양**: https://docs.anthropic.com/claude-code/hooks
-- **스킬 사양**: https://docs.anthropic.com/claude-code/skills
-- **GitHub 저장소**: https://github.com/lemon-etvibe/prompt-vault
+- **Claude Code Plugin Docs**: https://docs.anthropic.com/claude-code/plugins
+- **Hook System Spec**: https://docs.anthropic.com/claude-code/hooks
+- **Skill Spec**: https://docs.anthropic.com/claude-code/skills
+- **GitHub Repository**: https://github.com/lemon-etvibe/prompt-vault
 
 ---
 
-**질문이나 제안이 있으신가요?**
-GitHub Issues에서 논의해주세요. 기여를 환영합니다!
+**Questions or suggestions?**
+Discuss on GitHub Issues. Contributions welcome!
