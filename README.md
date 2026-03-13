@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> A retrospective journal for vibe coders. Log your AI sessions by phase, review your prompt patterns, and grow your skills with every interaction.
+> A retrospective journal for vibe coders. Log your AI sessions by phase, review your prompt patterns, and grow your skills through every interaction.
 
 ## What is prompt-vault?
 
