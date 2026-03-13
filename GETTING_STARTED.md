@@ -1,35 +1,35 @@
-[English](GETTING_STARTED.en.md) | 한국어
+[English](GETTING_STARTED.md) | [한국어](GETTING_STARTED.ko.md)
 
-# prompt-vault 시작 가이드
+# prompt-vault Getting Started Guide
 
-환영합니다! 이 튜토리얼은 prompt-vault 플러그인을 처음 사용하는 분들을 위한 실습 중심 가이드입니다. 단계별로 따라하면서 플러그인의 핵심 기능을 익혀보세요.
+Welcome! This tutorial is a hands-on guide for first-time users of the prompt-vault plugin. Follow along step-by-step to learn the plugin's core features.
 
-## 학습 목표
+## Learning Objectives
 
-이 튜토리얼을 완료하면 다음을 할 수 있습니다:
+After completing this tutorial, you will be able to:
 
-1. ✅ 프로젝트에 prompt-vault 로깅 환경 초기화
-2. ✅ 페이즈 단위로 작업 내용을 체계적으로 기록
-3. ✅ 페이즈 진행 상황을 한눈에 확인
-4. ✅ 컨텍스트 보호 메커니즘 이해 및 활용
-5. ✅ 자동 로깅 설정 및 듀얼 트랙 이해 (v1.2.0)
-6. ✅ 실제 프로젝트에서 모범 사례 적용
+1. ✅ Initialize prompt-vault logging environment for a project
+2. ✅ Systematically record work in phase units
+3. ✅ View phase progress at a glance
+4. ✅ Understand and utilize the context protection mechanism
+5. ✅ Configure auto-logging and understand dual-track mode (v1.2.0)
+6. ✅ Apply best practices in real projects
 
-**소요 시간**: 15-20분
-**난이도**: 초급
+**Estimated time**: 15-20 minutes
+**Difficulty**: Beginner
 
-## 사전 요구사항
+## Prerequisites
 
-시작하기 전에 다음을 준비하세요:
+Before starting, prepare the following:
 
 ```bash
-# 1. Claude Code 설치 확인
+# 1. Verify Claude Code installation
 claude --version
 
-# 2. jq 설치 확인
+# 2. Verify jq installation
 which jq
 
-# 없다면 설치:
+# If not installed:
 # macOS
 brew install jq
 
@@ -37,59 +37,59 @@ brew install jq
 sudo apt install jq
 ```
 
-## 튜토리얼 준비
+## Tutorial Preparation
 
-### 1단계: 플러그인 설치
+### Step 1: Install the Plugin
 
 ```bash
-# 마켓플레이스 등록 (최초 1회)
+# Add marketplace (one-time setup)
 claude plugin marketplace add https://github.com/lemon-etvibe/prompt-vault
 
-# 플러그인 설치
+# Install the plugin
 claude plugin install prompt-vault@prompt-vault
 ```
 
-> **수동 설치**: `git clone https://github.com/lemon-etvibe/prompt-vault.git` 후 `claude --plugin-dir /path/to/prompt-vault`
+> **Manual install**: `git clone https://github.com/lemon-etvibe/prompt-vault.git` then `claude --plugin-dir /path/to/prompt-vault`
 
-### 2단계: 샘플 프로젝트 생성
+### Step 2: Create a Sample Project
 
 ```bash
-# 튜토리얼용 프로젝트 디렉토리 생성
+# Create a tutorial project directory
 mkdir ~/tutorial-todo-app
 cd ~/tutorial-todo-app
 
-# Claude 시작 (플러그인이 자동 로드됨)
+# Start Claude (plugin auto-loaded)
 claude
 ```
 
-### 3단계: 플러그인 로드 확인
+### Step 3: Verify Plugin Loaded
 
-Claude가 시작되면 다음과 같은 메시지가 표시되어야 합니다:
+When Claude starts, you should see the following message:
 
 ```
 ✓ Loaded plugin: prompt-vault (1.2.0)
   Skills: /prompt-vault:init, /prompt-vault:log, /prompt-vault:status, /prompt-vault:report
 ```
 
-만약 표시되지 않는다면:
-- `--plugin-dir` 경로가 정확한지 확인
-- `prompt-vault/.claude-plugin/plugin.json` 파일이 존재하는지 확인
+If not displayed:
+- Check that `--plugin-dir` path is correct
+- Verify `prompt-vault/.claude-plugin/plugin.json` file exists
 
-## 페이즈 1: 로깅 환경 초기화
+## Phase 1: Initialize Logging Environment
 
-이제 본격적으로 prompt-vault를 사용해봅시다!
+Let's start using prompt-vault!
 
-### 1.1 초기화 실행
+### 1.1 Run Initialization
 
-Claude에게 다음을 입력하세요:
+Enter the following in Claude:
 
 ```
 /prompt-vault:init
 ```
 
-### 1.2 예상 출력
+### 1.2 Expected Output
 
-Claude가 다음과 같은 작업을 수행합니다:
+Claude will perform the following actions:
 
 ```
 ✓ Created .local/logs/ directory
@@ -106,26 +106,26 @@ Initialization complete! You can now use:
 - Auto-logging is active — logs are created automatically on session end/compact
 ```
 
-### 1.3 생성된 파일 확인
+### 1.3 Verify Generated Files
 
-터미널에서 생성된 파일을 확인해보세요:
+Check the generated files in your terminal:
 
 ```bash
-# 로그 디렉토리 확인
+# Check log directory
 ls -la .local/logs/
 
-# 출력 예시:
+# Expected output:
 # .config
 # _index.md
 
-# .config 내용 확인
+# Check .config contents
 cat .local/logs/.config
 
-# 자동 로깅 설정 확인 (v1.2.0)
+# Check auto-logging config (v1.2.0)
 cat .prompt-vault/config.json
 ```
 
-**예상 출력**:
+**Expected output**:
 ```json
 {
   "model": "claude-opus-4-6",
@@ -135,50 +135,50 @@ cat .prompt-vault/config.json
 }
 ```
 
-### 1.4 연습 1.1: .config 필드 이해하기
+### 1.4 Exercise 1.1: Understanding .config Fields
 
-`.config` 파일의 각 필드를 살펴봅시다:
+Let's examine each field in `.config`:
 
-- **`model`**: 현재 사용 중인 Claude 모델 ID
-- **`context_window_tokens`**: 모델의 컨텍스트 윈도우 크기 (토큰 수)
-- **`warn_percent`**: 경고를 발생시킬 임계값 (80% = 컨텍스트의 80% 사용 시)
-- **`warn_bytes`**: transcript 파일의 바이트 크기로 환산한 임계값
+- **`model`**: Currently active Claude model ID
+- **`context_window_tokens`**: Model's context window size (in tokens)
+- **`warn_percent`**: Threshold for triggering warnings (80% = warn when 80% of context is used)
+- **`warn_bytes`**: Threshold converted to transcript file byte size
 
-**계산 예시**:
+**Calculation example**:
 ```
-200,000 토큰 × 4 바이트/토큰 × 80% = 640,000 바이트
+200,000 tokens × 4 bytes/token × 80% = 640,000 bytes
 ```
 
-### 1.5 연습 1.2: 멱등성 테스트
+### 1.5 Exercise 1.2: Idempotency Test
 
-`/prompt-vault:init`를 다시 실행해보세요. 이미 존재하는 파일은 건너뛰고, 새로운 내용만 추가됩니다.
+Run `/prompt-vault:init` again. It will skip existing files and only add new content.
 
 ```
 /prompt-vault:init
 ```
 
-**예상 출력**:
+**Expected output**:
 ```
 ✓ .local/logs/ already exists, skipping
 ✓ .config already exists, skipping
 ...
 ```
 
-이것이 **멱등 연산(idempotent operation)**입니다. 여러 번 실행해도 안전합니다!
+This is an **idempotent operation**. Safe to run multiple times!
 
-## 페이즈 2: 첫 작업 시뮬레이션
+## Phase 2: Simulating Your First Work
 
-이제 실제 작업을 시뮬레이션해봅시다.
+Now let's simulate actual work.
 
-### 2.1 시나리오: 할 일 앱 만들기
+### 2.1 Scenario: Building a Todo App
 
-Claude에게 다음을 요청하세요:
+Ask Claude the following:
 
 ```
-간단한 할 일 앱을 만들어줘. Python으로 할 일 추가, 조회, 완료 표시 기능을 구현해줘.
+Create a simple todo app. Implement add, list, and mark-complete features in Python.
 ```
 
-Claude가 `todo.py` 파일을 생성할 것입니다. 예시 코드:
+Claude will create a `todo.py` file. Example code:
 
 ```python
 # todo.py
@@ -206,17 +206,17 @@ if __name__ == "__main__":
     list_todos()
 ```
 
-### 2.2 작업 확인
+### 2.2 Verify Your Work
 
 ```bash
-# 생성된 파일 확인
+# Check generated file
 ls todo.py
 
-# 실행 테스트
+# Run test
 python todo.py
 ```
 
-**예상 출력**:
+**Expected output**:
 ```
 Added: Buy milk
 Added: Write tutorial
@@ -227,238 +227,238 @@ Marked done: Buy milk
 2. [ ] Write tutorial
 ```
 
-## 페이즈 3: 첫 페이즈 로깅
+## Phase 3: Your First Phase Log
 
-작업을 완료했으니 이제 로깅해봅시다!
+Work is done — let's log it!
 
-### 3.1 페이즈 로그 생성
+### 3.1 Create Phase Log
 
-Claude에게 다음을 입력하세요:
+Enter the following in Claude:
 
 ```
-/prompt-vault:log "할 일 앱 기본 기능 구현"
+/prompt-vault:log "Basic todo app implementation"
 ```
 
-### 3.2 생성된 로그 확인
+### 3.2 Verify the Generated Log
 
 ```bash
-# phase-001.md 파일 확인
+# Check phase-001.md file
 cat .local/logs/phase-001.md
 ```
 
-**예상 출력**:
+**Expected output**:
 ```markdown
-# Phase 001: 할 일 앱 기본 기능 구현
+# Phase 001: Basic todo app implementation
 
 - **Date**: 2026-02-12
 - **Session**: 0e303ae8-0889-4a75-b99b-3a642be5c07c
 
 ## User Prompt
-> 간단한 할 일 앱을 만들어줘. Python으로 할 일 추가, 조회, 완료 표시 기능을 구현해줘.
+> Create a simple todo app. Implement add, list, and mark-complete features in Python.
 
 ## Actions
-- Python 할 일 앱 구현을 위한 `todo.py` 파일 생성
-- 다음 기능 구현:
-  - `add_todo(task)`: 새 할 일 추가
-  - `list_todos()`: 모든 할 일 조회
-  - `mark_done(index)`: 할 일 완료 표시
-- 간단한 테스트 케이스 추가 (main block)
+- Created `todo.py` file for Python todo app implementation
+- Implemented the following features:
+  - `add_todo(task)`: Add new todo item
+  - `list_todos()`: List all todo items
+  - `mark_done(index)`: Mark todo as complete
+- Added simple test cases (main block)
 
 ## Results
-- **파일 생성**: `todo.py` (약 25줄)
-- **핵심 자료구조**: `todos` 리스트 (딕셔너리 요소: task, done)
-- **상태 표시**: 완료는 ✓, 미완료는 빈칸
+- **File created**: `todo.py` (~25 lines)
+- **Core data structure**: `todos` list (dictionary elements: task, done)
+- **Status display**: ✓ for complete, blank for incomplete
 
 ## Decisions
-- **언어 선택**: Python (간결함, 가독성)
-- **자료구조**: 리스트 + 딕셔너리 (간단한 구조, DB 불필요)
-- **출력 형식**: 이모지 체크박스 (시각적 명확성)
+- **Language choice**: Python (conciseness, readability)
+- **Data structure**: List + Dictionary (simple structure, no DB needed)
+- **Output format**: Emoji checkbox (visual clarity)
 
 ## Next
-- 삭제 기능 추가
-- 파일 저장/로드 기능 (영속성)
-- CLI 인터페이스 개선
+- Add delete feature
+- Add file save/load functionality (persistence)
+- Improve CLI interface
 ```
 
-### 3.3 인덱스 확인
+### 3.3 Check the Index
 
 ```bash
-# _index.md 확인
+# Check _index.md
 cat .local/logs/_index.md
 ```
 
-**예상 출력**:
+**Expected output**:
 ```markdown
 # Phase Log Index
 
 | # | Title | Status | Date | Summary |
 |---|-------|--------|------|---------|
-| 001 | 할 일 앱 기본 기능 구현 | done | 2026-02-12 | Python으로 할 일 추가/조회/완료 기능 구현 |
+| 001 | Basic todo app implementation | done | 2026-02-12 | Python todo add/list/complete features implemented |
 ```
 
-### 3.4 연습 2.1: 두 번째 페이즈 추가
+### 3.4 Exercise 2.1: Add a Second Phase
 
-이번에는 삭제 기능을 추가해봅시다. Claude에게:
-
-```
-todo.py에 삭제 기능을 추가해줘. 인덱스로 할 일을 삭제할 수 있어야 해.
-```
-
-Claude가 `delete_todo(index)` 함수를 추가할 것입니다. 완료 후:
+This time, let's add a delete feature. Ask Claude:
 
 ```
-/prompt-vault:log "할 일 삭제 기능 추가"
+Add a delete feature to todo.py. It should be able to delete a todo by index.
 ```
 
-### 3.5 연습 2.2: 두 페이즈 비교
+Claude will add a `delete_todo(index)` function. After completion:
+
+```
+/prompt-vault:log "Add todo delete feature"
+```
+
+### 3.5 Exercise 2.2: Compare Two Phases
 
 ```bash
-# 두 번째 로그 확인
+# Check second log
 cat .local/logs/phase-002.md
 
-# 인덱스 업데이트 확인
+# Check index update
 cat .local/logs/_index.md
 ```
 
-이제 `_index.md`에 두 개의 행이 표시됩니다!
+Now `_index.md` will show two rows!
 
-## 페이즈 4: 진행 상태 확인
+## Phase 4: Checking Progress
 
-### 4.1 상태 조회
+### 4.1 Status Query
 
-Claude에게:
+Ask Claude:
 
 ```
 /prompt-vault:status
 ```
 
-### 4.2 예상 출력
+### 4.2 Expected Output
 
 ```markdown
 # Phase Log Index
 
 | # | Title | Status | Date | Summary |
 |---|-------|--------|------|---------|
-| 001 | 할 일 앱 기본 기능 구현 | done | 2026-02-12 | Python으로 할 일 추가/조회/완료 기능 구현 |
-| 002 | 할 일 삭제 기능 추가 | done | 2026-02-12 | 인덱스 기반 할 일 삭제 함수 구현 |
+| 001 | Basic todo app implementation | done | 2026-02-12 | Python todo add/list/complete features implemented |
+| 002 | Add todo delete feature | done | 2026-02-12 | Index-based todo delete function implemented |
 
 Total: 2 phases completed
 ```
 
-### 4.3 사용 사례
+### 4.3 Use Cases
 
-`/prompt-vault:status`는 다음 상황에서 유용합니다:
-- 프로젝트를 오랜만에 다시 열었을 때
-- 팀원에게 진행 상황을 공유할 때
-- 다음 작업 계획을 세울 때
+`/prompt-vault:status` is useful in these situations:
+- When reopening a project after a long break
+- When sharing progress with team members
+- When planning next steps
 
-## 페이즈 5: 컨텍스트 보호 체험
+## Phase 5: Context Protection Experience
 
-이 섹션에서는 prompt-vault의 핵심 기능인 **컨텍스트 보호 메커니즘**을 체험합니다.
+This section covers prompt-vault's core feature: the **context protection mechanism**.
 
-### 5.1 컨텍스트 경고 시뮬레이션
+### 5.1 Context Warning Simulation
 
-실제로는 장시간 작업 후 컨텍스트가 80%를 넘으면 자동 경고가 표시됩니다:
+In practice, after extended work, when context exceeds 80%, an automatic warning is displayed:
 
 ```
 ⚠️ [prompt-vault] Context ~85% used (680000 bytes).
 💡 Run /prompt-vault:log to save progress, then /compact to free context.
 ```
 
-### 5.2 내부 동작 이해
+### 5.2 Understanding the Internal Mechanism
 
-**Stop 훅 (context-check.sh)**이 매 응답 후 실행됩니다:
+The **Stop hook (context-check.sh)** runs after every response:
 
-1. 현재 transcript 파일 크기 측정
-2. `.local/logs/.config`에서 `warn_bytes` (640,000) 읽기
-3. transcript 크기가 임계값 초과 시 경고 출력
+1. Measure current transcript file size
+2. Read `warn_bytes` (640,000) from `.local/logs/.config`
+3. Output warning if transcript size exceeds threshold
 
-**확인해보기**:
+**Try it yourself**:
 ```bash
-# Stop 훅 스크립트 확인
+# Check the Stop hook script
 cat ~/Downloads/prompt-vault/scripts/context-check.sh
 ```
 
-### 5.3 압축 전 체크포인트 저장
+### 5.3 Saving Checkpoint Before Compaction
 
-경고가 표시되면 다음을 실행:
+When the warning appears, execute:
 
 ```
-/prompt-vault:log "체크포인트: 파일 저장/로드 기능 추가 완료"
+/prompt-vault:log "Checkpoint: file save/load feature complete"
 /compact
 ```
 
-### 5.4 압축 워크플로우
+### 5.4 Compaction Workflow
 
-`/compact` 실행 시 다음이 순차적으로 발생합니다:
+When `/compact` is executed, the following occurs sequentially:
 
-1. **PreCompact 훅** (`pre-compact.sh`) 실행
-   - 현재 시각과 페이즈 개수를 `.local/logs/compaction.log`에 기록
+1. **PreCompact hook** (`pre-compact.sh`) executes
+   - Records current time and phase count to `.local/logs/compaction.log`
 
-2. **Claude가 컨텍스트 압축**
-   - 긴 대화를 요약하여 컨텍스트 공간 확보
+2. **Claude compacts context**
+   - Summarizes long conversation to free context space
 
-3. **SessionStart 훅** (`post-compact.sh`) 실행
-   - `.local/logs/_index.md` 읽기
-   - 가장 최근 `phase-*.md` 읽기
-   - **두 내용을 stdout으로 출력 → Claude의 새 세션 컨텍스트로 주입**
+3. **SessionStart hook** (`post-compact.sh`) executes
+   - Reads `.local/logs/_index.md`
+   - Reads most recent `phase-*.md`
+   - **Outputs both to stdout → Injected into Claude's new session context**
 
-### 5.5 복구 확인
+### 5.5 Recovery Verification
 
-압축 후 Claude는 다음과 같은 복구 메시지를 표시합니다:
+After compaction, Claude will display a recovery message like:
 
 ```
 === Phase Progress (post-compaction recovery) ===
 # Phase Log Index
 | # | Title | Status | Date | Summary |
 |---|-------|--------|------|---------|
-| 001 | 할 일 앱 기본 기능 구현 | done | 2026-02-12 | ... |
-| 002 | 할 일 삭제 기능 추가 | done | 2026-02-12 | ... |
-| 003 | 체크포인트: 파일 저장/로드 기능 추가 완료 | done | 2026-02-12 | ... |
+| 001 | Basic todo app implementation | done | 2026-02-12 | ... |
+| 002 | Add todo delete feature | done | 2026-02-12 | ... |
+| 003 | Checkpoint: file save/load feature complete | done | 2026-02-12 | ... |
 
 === Latest Phase Log ===
-# Phase 003: 체크포인트: 파일 저장/로드 기능 추가 완료
+# Phase 003: Checkpoint: file save/load feature complete
 - **Date**: 2026-02-12
 ...
 === End Recovery ===
 ```
 
-### 5.6 핵심 인사이트
+### 5.6 Key Insight
 
-**압축 후에도 진행 상황이 보존됩니다!**
+**Progress is preserved even after compaction!**
 
-- ✅ 페이즈 인덱스 테이블 복구 (전체 이력)
-- ✅ 최신 페이즈 로그 복구 (직전 작업 컨텍스트)
-- ✅ Claude가 프로젝트 상태를 인지한 상태로 재시작
+- ✅ Phase index table recovered (full history)
+- ✅ Latest phase log recovered (immediate work context)
+- ✅ Claude restarts aware of project state
 
-### 5.7 연습 3.1: 압축 이력 확인
+### 5.7 Exercise 3.1: Check Compaction History
 
 ```bash
-# 압축 이력 파일 확인
+# Check compaction history file
 cat .local/logs/compaction.log
 ```
 
-**예상 출력**:
+**Expected output**:
 ```
 ⚠️ Auto-compaction at 2026-02-12 14:32:10
 Phase count: 3
 ---
 ```
 
-## 페이즈 6: 자동 로깅 설정 (v1.2.0 신규)
+## Phase 6: Auto-Logging Setup (New in v1.2.0)
 
-v1.2.0부터 `/prompt-vault:log`를 직접 실행하지 않아도 **자동으로 작업 이력이 기록**됩니다.
+Starting from v1.2.0, work history is **automatically recorded** without running `/prompt-vault:log` manually.
 
-### 6.1 자동 로깅이란?
+### 6.1 What is Auto-Logging?
 
-두 가지 시점에서 자동 기록됩니다:
+Logs are automatically created at two trigger points:
 
-- **Stop 훅**: 세션 종료 시 대화 턴 수 ≥ 3이면 자동 페이즈 로그 생성
-- **PreCompact 훅**: 컨텍스트 압축(자동/수동) 시 압축 전 내용 자동 기록
+- **Stop Hook**: Auto-generates phase log when session ends (if conversation turns ≥ 3)
+- **PreCompact Hook**: Auto-records work before context compaction (auto/manual)
 
-### 6.2 설정 확인
+### 6.2 Configuration
 
-`/prompt-vault:init` 실행 시 `.prompt-vault/config.json`에 자동 로깅 설정이 포함됩니다:
+`/prompt-vault:init` includes auto-logging settings in `.prompt-vault/config.json`:
 
 ```json
 {
@@ -474,157 +474,157 @@ v1.2.0부터 `/prompt-vault:log`를 직접 실행하지 않아도 **자동으로
 }
 ```
 
-### 6.3 듀얼 트랙 이해하기
+### 6.3 Dual-Track Mode
 
-| 모드 | 설명 | 비용 | 설정 |
-|------|------|------|------|
-| **JSONL 파서** (기본) | transcript를 파싱하여 구조화된 로그 생성 | 무료 | `aiSummary: false` |
-| **AI 요약** (옵트인) | `claude --print`로 AI가 요약 생성 | API 비용 발생 | `aiSummary: true` |
+| Mode | Description | Cost | Config |
+|------|-------------|------|--------|
+| **JSONL Parser** (default) | Parses transcript into structured log | Free | `aiSummary: false` |
+| **AI Summary** (opt-in) | Uses `claude --print` for AI-generated summary | API cost | `aiSummary: true` |
 
-기본 모드는 JSONL 파서로, **API 비용 없이 항상 성공**합니다. AI 요약 실패 시에도 JSONL 파서로 자동 폴백됩니다.
+The default JSONL parser mode **always succeeds at zero cost**. If AI summary fails, it automatically falls back to JSONL parser.
 
-### 6.4 동작 확인
+### 6.4 Verify It Works
 
-자동 로깅은 백그라운드에서 실행되므로 별도 조작이 필요 없습니다:
+Auto-logging runs in the background — no manual action needed:
 
-1. 평소처럼 Claude와 작업
-2. 세션 종료(Stop) 또는 압축(Compact) 시 자동 기록
-3. `/prompt-vault:status`로 자동 생성된 로그 확인
+1. Work with Claude as usual
+2. Logs are auto-generated on session Stop or Compact
+3. Check with `/prompt-vault:status`
 
 ```bash
-# 자동 생성된 로그에는 Trigger 필드가 포함됩니다
+# Auto-generated logs include a Trigger field
 cat .local/logs/phase-003.md | head -5
 # Phase 003: ...
 # - **Trigger**: stop (auto)
 ```
 
-### 6.5 핵심 포인트
+### 6.5 Key Points
 
-- ✅ **수동 로깅과 병행 가능** — `/prompt-vault:log`도 여전히 사용 가능
-- ✅ **중복 방지** — 해시 기반 dedup으로 같은 내용이 두 번 기록되지 않음
-- ✅ **UX 블로킹 없음** — 비동기(nohup) 실행으로 Claude Code 응답에 영향 없음
+- ✅ **Works alongside manual logging** — `/prompt-vault:log` still works
+- ✅ **No duplicates** — Hash-based dedup prevents double-logging
+- ✅ **No UX blocking** — Async (nohup) execution, no impact on Claude Code responsiveness
 
-## 실제 시나리오
+## Real-World Scenarios
 
-### 시나리오 1: 여러 날에 걸친 프로젝트
+### Scenario 1: Multi-Day Project
 
-**1일차**:
+**Day 1**:
 ```bash
-# 프로젝트 시작
+# Start project
 /prompt-vault:init
-[작업 1] "사용자 인증 구현"
-/prompt-vault:log "사용자 인증 API 구현"
-[작업 2] "데이터베이스 설계"
-/prompt-vault:log "PostgreSQL 스키마 설계"
+[Work 1] "Implement user authentication"
+/prompt-vault:log "User authentication API implementation"
+[Work 2] "Database design"
+/prompt-vault:log "PostgreSQL schema design"
 ```
 
-**2일차 재개**:
+**Day 2 Resume**:
 ```bash
-# 어제까지의 상태 확인
+# Check yesterday's status
 /prompt-vault:status
 
-# 출력:
-# | 001 | 사용자 인증 API 구현 | done | 2026-02-11 | ... |
-# | 002 | PostgreSQL 스키마 설계 | done | 2026-02-11 | ... |
+# Output:
+# | 001 | User authentication API implementation | done | 2026-02-11 | ... |
+# | 002 | PostgreSQL schema design | done | 2026-02-11 | ... |
 
-# 이제 다음 작업 시작
-[작업 3] "프론트엔드 구현"
+# Now start next task
+[Work 3] "Frontend implementation"
 ```
 
-### 시나리오 2: 여러 프로젝트 관리
+### Scenario 2: Managing Multiple Projects
 
 ```bash
-# 프로젝트 A
+# Project A
 cd ~/project-a
 claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
-[작업...]
+[Work...]
 
-# 프로젝트 B (독립적인 로그)
+# Project B (independent logs)
 cd ~/project-b
 claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
-[작업...]
+[Work...]
 ```
 
-각 프로젝트의 `.local/logs/`는 완전히 독립적입니다!
+Each project's `.local/logs/` is completely independent!
 
-### 시나리오 3: 팀 협업 (향후)
+### Scenario 3: Team Collaboration (Future)
 
-Git에 로그를 커밋하여 팀원과 공유:
+Commit logs to Git and share with team:
 
 ```bash
-# .gitignore에서 .local/ 제거
+# Remove .local/ from .gitignore
 vim .gitignore
-# (`.local/` 행 삭제)
+# (Delete the `.local/` line)
 
-# 로그 커밋
+# Commit logs
 git add .local/logs/
 git commit -m "docs: Add phase logs for sprint 1"
 git push
 ```
 
-## 모범 사례
+## Best Practices
 
-### 로깅 시점
+### When to Log
 
-**완료 기준**을 명확히 하세요:
+Set clear **completion criteria**:
 
-- ✅ "API 엔드포인트 3개 구현 완료" → 로깅
-- ✅ "버그 수정 및 테스트 통과" → 로깅
-- ❌ "코드 작성 중..." → 아직 로깅하지 않음
+- ✅ "3 API endpoints implemented" → Log
+- ✅ "Bug fixed and tests passing" → Log
+- ❌ "Still writing code..." → Don't log yet
 
-### 페이즈 명명
+### Phase Naming
 
-**행동 중심, 결과 지향적**으로:
+**Action-oriented, result-focused**:
 
 ```bash
-# 좋은 예
-/prompt-vault:log "사용자 인증 JWT 토큰 구현"
-/prompt-vault:log "React 컴포넌트 3개 리팩토링"
+# Good examples
+/prompt-vault:log "Implement JWT token authentication"
+/prompt-vault:log "Refactor 3 React components"
 
-# 피해야 할 예
-/prompt-vault:log "작업"          # 너무 모호함
-/prompt-vault:log "코드 수정"      # 의미 없음
+# Avoid
+/prompt-vault:log "work"           # Too vague
+/prompt-vault:log "code changes"   # Meaningless
 ```
 
-### 페이즈 세분화
+### Phase Granularity
 
-**30-60분 집중 작업 단위**로 나누세요:
+Aim for **30-60 minute focused work units**:
 
 ```
-❌ 너무 큼: "전체 앱 구현"
-✅ 적당함: "사용자 모델 및 API 엔드포인트 구현"
-❌ 너무 작음: "함수 하나 추가"
+❌ Too large: "Implement entire app"
+✅ Right size: "User model and API endpoints"
+❌ Too small: "Add one function"
 ```
 
-## 고급 팁
+## Advanced Tips
 
-### 1. 수동 페이즈 편집
+### 1. Manual Phase Editing
 
-로그는 일반 마크다운 파일이므로 자유롭게 편집 가능:
+Logs are plain markdown files, so they're freely editable:
 
 ```bash
 vim .local/logs/phase-001.md
-# 오타 수정, 내용 보완, 링크 추가 등
+# Fix typos, supplement content, add links, etc.
 ```
 
-### 2. 이력 검색
+### 2. History Search
 
-과거 결정 사항이나 키워드 검색:
+Search for past decisions or keywords:
 
 ```bash
-# "PostgreSQL" 언급된 페이즈 찾기
+# Find phases mentioning "PostgreSQL"
 grep -r "PostgreSQL" .local/logs/
 
-# 출력 예시:
+# Example output:
 # phase-002.md:## Decisions
-# phase-002.md:- **데이터베이스**: PostgreSQL 선택, 이유: JSONB 지원
+# phase-002.md:- **Database**: PostgreSQL chosen, reason: JSONB support
 ```
 
-### 3. 맞춤 임계값 설정
+### 3. Custom Threshold Settings
 
-컨텍스트 경고를 더 일찍 받고 싶다면:
+If you want to receive context warnings earlier:
 
 ```bash
 vim .local/logs/.config
@@ -634,145 +634,145 @@ vim .local/logs/.config
 {
   "model": "claude-opus-4-6",
   "context_window_tokens": 200000,
-  "warn_percent": 70,          # 80 → 70으로 변경
-  "warn_bytes": 560000         # 640000 → 560000으로 변경
+  "warn_percent": 70,          # Changed from 80 → 70
+  "warn_bytes": 560000         # Changed from 640000 → 560000
 }
 ```
 
-### 4. 페이즈 내보내기
+### 4. Phase Export
 
-문서화나 리포트 작성에 활용:
+Use for documentation or report creation:
 
 ```bash
-# 모든 페이즈를 하나의 파일로 병합
+# Merge all phases into one file
 cat .local/logs/phase-*.md > project-history.md
 
-# 특정 기간의 페이즈만
+# Only phases from a specific period
 cat .local/logs/phase-{001..005}.md > sprint1-history.md
 ```
 
-## 튜토리얼 문제 해결
+## Tutorial Troubleshooting
 
-### 문제 1: 권한 거부
+### Issue 1: Permission Denied
 
-**증상**:
+**Symptom**:
 ```
 Error: Permission denied: .local/logs/
 ```
 
-**해결**:
+**Solution**:
 ```bash
-# 프로젝트 디렉토리 소유권 확인
+# Check project directory ownership
 ls -la .local/
 
-# 소유권 변경
+# Change ownership
 sudo chown -R $USER:$USER .local/
 ```
 
-### 문제 2: 경고가 표시되지 않음
+### Issue 2: No Warnings Appearing
 
-**원인**: `jq` 미설치 또는 `.config` 파일 문제
+**Cause**: `jq` not installed or `.config` file issue
 
-**해결**:
+**Solution**:
 ```bash
-# jq 확인
+# Check jq
 which jq
-brew install jq  # 없으면 설치
+brew install jq  # Install if missing
 
-# .config 확인
+# Check .config
 cat .local/logs/.config
-/prompt-vault:init  # 없으면 재초기화
+/prompt-vault:init  # Re-initialize if missing
 ```
 
-### 문제 3: 압축 후 복구 없음
+### Issue 3: No Recovery After Compaction
 
-**원인**: 압축 전에 페이즈를 로깅하지 않음
+**Cause**: Didn't log any phases before compaction
 
-**해결**:
-- SessionStart 훅은 최소한 하나의 `phase-*.md` 파일이 있어야 작동
-- 압축 전 반드시 `/prompt-vault:log` 실행
+**Solution**:
+- The SessionStart hook requires at least one `phase-*.md` file to work
+- Always run `/prompt-vault:log` before compaction
 
-### 문제 4: 페이즈 번호 건너뛰기
+### Issue 4: Phase Number Gaps
 
-**증상**: phase-001, phase-003 존재, phase-002 없음
+**Symptom**: phase-001, phase-003 exist, but phase-002 is missing
 
-**원인**: 이전에 phase-002를 수동 삭제했거나 번호 매김 로직 특성
+**Cause**: Previously manually deleted phase-002, or numbering logic characteristic
 
-**해결**: **정상 동작입니다.** 페이즈 번호는 연속적이지 않아도 됩니다. 파일명으로 정렬하면 됩니다.
+**Solution**: **This is normal behavior.** Phase numbers don't need to be consecutive. Just sort by filename.
 
-## 다음 단계
+## Self-Assessment Quiz
 
-축하합니다! 이제 prompt-vault의 핵심 기능을 모두 익혔습니다.
+Test your understanding of the tutorial:
 
-### 추가 학습 자료
+### Q1. When do you run `/prompt-vault:init`?
+**A**: Once per project. It's an idempotent operation, so it's safe to run multiple times.
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** — 플러그인 내부 구조 심층 분석
-  - 훅 시스템 작동 원리
-  - 스킬 구현 세부사항
-  - 커스터마이징 가이드
+### Q2. What format are phase logs stored in?
+**A**: `.local/logs/phase-NNN.md` markdown files (NNN auto-increments from 001)
 
-- **[README.md](README.md)** — 빠른 참조 가이드
+### Q3. When do context warnings appear?
+**A**: When transcript size exceeds the `warn_bytes` threshold in `.config` (default 640KB)
+
+### Q4. What gets recovered after compaction?
+**A**: `_index.md` (phase index table) + most recent `phase-*.md` (latest phase log)
+
+### Q5. What is the Stop hook's role?
+**A**: After every response, it checks transcript size and outputs a warning message when 80% is exceeded
+
+### Q6. How do you commit logs to Git?
+**A**: Remove the `.local/` line from `.gitignore`. (Be careful of sensitive information!)
+
+### Q7. Is it okay if phase numbers have gaps?
+**A**: Yes, it's normal. Gaps can occur when files are deleted.
+
+### Q8. Can it be used across multiple projects simultaneously?
+**A**: Yes, each project's `.local/logs/` is managed independently.
+
+## Next Steps
+
+Congratulations! You've now mastered all of prompt-vault's core features.
+
+### Additional Learning Resources
+
+- **[ARCHITECTURE.en.md](ARCHITECTURE.en.md)** — Deep dive into plugin internals
+  - Hook system mechanics
+  - Skill implementation details
+  - Customization guide
+
+- **[README.en.md](README.en.md)** — Quick reference guide
   - FAQ
-  - 문제 해결
-  - 모범 사례
+  - Troubleshooting
+  - Best practices
 
-### 커스터마이징 탐색
+### Explore Customization
 
-플러그인을 자신의 워크플로우에 맞게 조정해보세요:
+Adapt the plugin to your own workflow:
 
-- 페이즈 템플릿 수정 (`templates/phase.md`)
-- 임계값 조정 (`.local/logs/.config`)
-- 새 훅 추가 (`hooks/hooks.json`)
+- Modify the phase template (`templates/phase.md`)
+- Adjust thresholds (`.local/logs/.config`)
+- Add new hooks (`hooks/hooks.json`)
 
-### 멀티 프로젝트 워크플로우
+### Multi-Project Workflow
 
-실제 프로젝트에서 플러그인을 활용해보세요:
+Try using the plugin in a real project:
 
 ```bash
 cd ~/my-real-project
 claude --plugin-dir ~/Downloads/prompt-vault
 /prompt-vault:init
-[실제 작업 시작]
+[Start your actual work]
 ```
 
-## 자가 평가 퀴즈
-
-튜토리얼을 잘 이해했는지 확인해보세요:
-
-### Q1. `/prompt-vault:init`는 언제 실행하나요?
-**A**: 프로젝트당 한 번만 실행합니다. 멱등 연산이므로 여러 번 실행해도 안전합니다.
-
-### Q2. 페이즈 로그는 어떤 형식으로 저장되나요?
-**A**: `.local/logs/phase-NNN.md` 마크다운 파일 (NNN은 001부터 자동 증가)
-
-### Q3. 컨텍스트 경고는 언제 표시되나요?
-**A**: transcript 크기가 `.config`의 `warn_bytes` 임계값(기본 640KB)을 초과할 때
-
-### Q4. 압축 후 무엇이 복구되나요?
-**A**: `_index.md` (페이즈 인덱스 테이블) + 가장 최근 `phase-*.md` (최신 페이즈 로그)
-
-### Q5. Stop 훅의 역할은 무엇인가요?
-**A**: 매 응답 후 transcript 크기를 체크하고, 80% 초과 시 경고 메시지 출력
-
-### Q6. 로그를 Git에 커밋하려면?
-**A**: `.gitignore`에서 `.local/` 행을 제거하면 됩니다. (민감 정보 주의!)
-
-### Q7. 페이즈 번호가 건너뛰어도 되나요?
-**A**: 네, 정상입니다. 파일을 삭제하면 번호가 건너뛸 수 있습니다.
-
-### Q8. 여러 프로젝트에서 동시에 사용 가능한가요?
-**A**: 네, 각 프로젝트의 `.local/logs/`는 독립적으로 관리됩니다.
-
-## 리소스
+## Resources
 
 - **GitHub**: https://github.com/lemon-etvibe/prompt-vault
-- **이슈 트래킹**: https://github.com/lemon-etvibe/prompt-vault/issues
-- **README.md**: 빠른 참조 가이드
-- **ARCHITECTURE.md**: 기술 내부 구조
+- **Issue Tracking**: https://github.com/lemon-etvibe/prompt-vault/issues
+- **README.en.md**: Quick reference guide
+- **ARCHITECTURE.en.md**: Technical internal structure
 
 ---
 
-**질문이나 피드백이 있으신가요?**
-GitHub Issues에 자유롭게 남겨주세요. 여러분의 의견을 기다립니다!
+**Have questions or feedback?**
+Feel free to leave them on GitHub Issues. We'd love to hear from you!
 
 **Happy logging! 🚀**

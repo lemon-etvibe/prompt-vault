@@ -9,6 +9,15 @@ LOGS_DIR=".local/logs"
 CONFIG="${LOGS_DIR}/.config"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
+# === Language setup ===
+source "${PLUGIN_ROOT}/scripts/get-lang.sh"
+LABELS_FILE="${PLUGIN_ROOT}/templates/labels.${LANG_CODE}.sh"
+if [ -f "$LABELS_FILE" ]; then
+  source "$LABELS_FILE"
+else
+  source "${PLUGIN_ROOT}/templates/labels.en.sh"
+fi
+
 # === 0. 환경 검증 ===
 if [ ! -d "$LOGS_DIR" ]; then
   echo "ERROR: ${LOGS_DIR} not found. Run /prompt-vault:init first." >&2
@@ -246,7 +255,7 @@ PHEOF
     cat >> "$PHASE_SECTIONS_FILE" <<USEREOF
       <div class="mb-4">
         <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0" style="background: var(--color-primary); color: white;">U</div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0" style="background: var(--color-primary); color: white;">${LABEL_USER_AVATAR}</div>
           <div class="chat-user p-4">
             <p class="text-sm text-gray-700 whitespace-pre-wrap">${USER_PROMPT}</p>
           </div>
@@ -262,24 +271,24 @@ USEREOF
           <div class="chat-ai p-4">
             <div class="step-card p-4 mb-3">
               <details>
-                <summary class="text-sm font-bold text-gray-700">Actions <span class="tool-badge ml-2">수행 작업</span></summary>
+                <summary class="text-sm font-bold text-gray-700">${LABEL_ACTIONS} <span class="tool-badge ml-2">${LABEL_ACTIONS_BADGE}</span></summary>
                 <div class="mt-3">${ACTIONS_HTML}</div>
               </details>
             </div>
             <div class="step-card p-4 mb-3">
               <details>
-                <summary class="text-sm font-bold text-gray-700">Results <span class="tool-badge ml-2">결과</span></summary>
+                <summary class="text-sm font-bold text-gray-700">${LABEL_RESULTS} <span class="tool-badge ml-2">${LABEL_RESULTS_BADGE}</span></summary>
                 <div class="mt-3">${RESULTS_HTML}</div>
               </details>
             </div>
             <div class="step-card p-4 mb-3">
               <details>
-                <summary class="text-sm font-bold text-gray-700">Decisions <span class="tool-badge ml-2">결정</span></summary>
+                <summary class="text-sm font-bold text-gray-700">${LABEL_DECISIONS} <span class="tool-badge ml-2">${LABEL_DECISIONS_BADGE}</span></summary>
                 <div class="mt-3">${DECISIONS_HTML}</div>
               </details>
             </div>
           </div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 bg-gray-200 text-gray-600">C</div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 bg-gray-200 text-gray-600">${LABEL_AI_AVATAR}</div>
         </div>
       </div>
 AIEOF
@@ -288,7 +297,7 @@ AIEOF
   if [ -n "$NEXT" ]; then
     cat >> "$PHASE_SECTIONS_FILE" <<NEXTEOF
       <div class="next-card p-4 ml-11 mb-4">
-        <div class="text-xs font-semibold text-gray-500 mb-2">Next Steps</div>
+        <div class="text-xs font-semibold text-gray-500 mb-2">${LABEL_NEXT_STEPS}</div>
         ${NEXT_HTML}
       </div>
 NEXTEOF
@@ -304,6 +313,16 @@ report_type="${1:-all}"
 # sed용 변수 사전 이스케이핑
 S_PROJECT_NAME=$(sed_escape "$PROJECT_NAME")
 S_PROJECT_DESC=$(sed_escape "$PROJECT_DESC")
+S_FONT_IMPORT=$(sed_escape "$LABEL_FONT_IMPORT")
+S_FONT_FAMILY=$(sed_escape "$LABEL_FONT_FAMILY")
+S_LABEL_TOTAL_PHASES=$(sed_escape "$LABEL_TOTAL_PHASES")
+S_LABEL_DURATION=$(sed_escape "$LABEL_DURATION")
+S_LABEL_COMPLETED=$(sed_escape "$LABEL_COMPLETED")
+S_LABEL_PROGRESS=$(sed_escape "$LABEL_PROGRESS")
+S_LABEL_TIMELINE=$(sed_escape "$LABEL_TIMELINE")
+S_LABEL_PHASE_INDEX=$(sed_escape "$LABEL_PHASE_INDEX")
+S_LABEL_DETAIL_LINK=$(sed_escape "$LABEL_DETAIL_LINK")
+S_LABEL_GENERATED=$(sed_escape "$LABEL_GENERATED")
 
 generate_summary() {
   local template="${PLUGIN_ROOT}/templates/report-summary.html"
@@ -326,7 +345,18 @@ generate_summary() {
        s|{{DONE_COUNT}}|${DONE_COUNT}|g; \
        s|{{PROGRESS_PCT}}|${PROGRESS_PCT}|g; \
        s|{{DATE_RANGE}}|${DATE_RANGE}|g; \
-       s|{{GENERATED_AT}}|${GENERATED_AT}|g" "$template" > "$output"
+       s|{{GENERATED_AT}}|${GENERATED_AT}|g; \
+       s|{{HTML_LANG}}|${LABEL_HTML_LANG}|g; \
+       s|{{FONT_IMPORT}}|${S_FONT_IMPORT}|g; \
+       s|{{FONT_FAMILY}}|${S_FONT_FAMILY}|g; \
+       s|{{LABEL_TOTAL_PHASES}}|${S_LABEL_TOTAL_PHASES}|g; \
+       s|{{LABEL_DURATION}}|${S_LABEL_DURATION}|g; \
+       s|{{LABEL_COMPLETED}}|${S_LABEL_COMPLETED}|g; \
+       s|{{LABEL_PROGRESS}}|${S_LABEL_PROGRESS}|g; \
+       s|{{LABEL_TIMELINE}}|${S_LABEL_TIMELINE}|g; \
+       s|{{LABEL_PHASE_INDEX}}|${S_LABEL_PHASE_INDEX}|g; \
+       s|{{LABEL_DETAIL_LINK}}|${S_LABEL_DETAIL_LINK}|g; \
+       s|{{LABEL_GENERATED}}|${S_LABEL_GENERATED}|g" "$template" > "$output"
 
   # 2단계: 반복 구간 마커를 임시 파일로 치환
   replace_marker "$output" "{{PHASE_TABLE}}" "$PHASE_TABLE_FILE"
@@ -345,13 +375,27 @@ generate_detail() {
   fi
 
   # 1단계: 단순 플레이스홀더 sed 치환
+  local S_LABEL_EMPTY_TITLE S_LABEL_EMPTY_DESC
+  if [ "$LANG_CODE" = "ko" ]; then
+    S_LABEL_EMPTY_TITLE=$(sed_escape "아직 로그가 없습니다")
+    S_LABEL_EMPTY_DESC=$(sed_escape "<code class=\"code-inline\">/prompt-vault:log</code> 스킬로 첫 페이즈를 기록해보세요.")
+  else
+    S_LABEL_EMPTY_TITLE=$(sed_escape "No logs yet")
+    S_LABEL_EMPTY_DESC=$(sed_escape "Use <code class=\"code-inline\">/prompt-vault:log</code> to record your first phase.")
+  fi
+
   sed "s|{{PROJECT_NAME}}|${S_PROJECT_NAME}|g; \
        s|{{COLOR_1}}|${COLOR_1}|g; \
        s|{{COLOR_2}}|${COLOR_2}|g; \
        s|{{COLOR_3}}|${COLOR_3}|g; \
        s|{{COLOR_4}}|${COLOR_4}|g; \
        s|{{COLOR_5}}|${COLOR_5}|g; \
-       s|{{GENERATED_AT}}|${GENERATED_AT}|g" "$template" > "$output"
+       s|{{GENERATED_AT}}|${GENERATED_AT}|g; \
+       s|{{HTML_LANG}}|${LABEL_HTML_LANG}|g; \
+       s|{{FONT_IMPORT}}|${S_FONT_IMPORT}|g; \
+       s|{{FONT_FAMILY}}|${S_FONT_FAMILY}|g; \
+       s|{{LABEL_EMPTY_TITLE}}|${S_LABEL_EMPTY_TITLE}|g; \
+       s|{{LABEL_EMPTY_DESC}}|${S_LABEL_EMPTY_DESC}|g" "$template" > "$output"
 
   # 2단계: 반복 구간 마커를 임시 파일로 치환
   replace_marker "$output" "{{PHASE_SECTIONS}}" "$PHASE_SECTIONS_FILE"
