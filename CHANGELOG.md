@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-03-17
+
+### Changed
+- `commands/*.md` — enforce Skill tool invocation with `"You MUST use the Skill tool"` directive
+- Each command now describes what the skill does (key actions) so Claude delegates correctly
+- Added `"Do NOT ... manually"` guard to prevent self-interpretation
+
 ## [1.3.4] - 2026-03-17
 
 ### Fixed
