@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `scripts/init.sh` — deterministic file creation script for init reliability
+- `commands/` directory — enables slash command autocomplete in CLI (init, log, status, report)
+- i18n multilingual support (en/ko) for all skills, reports, and messages
+- `labels.en.sh` / `labels.ko.sh` — localized label files for report generation
+- `lang` field in `.config` for language preference
+
+### Changed
+- `skills/init/SKILL.md` — simplified to collect preferences → call `init.sh` → verify; language selection as first step
+- `skills/log/SKILL.md` — improved description with trigger keywords, added WHY notes and example
+- `skills/status/SKILL.md` — added output format definition, error handling, and example
+- `skills/report/SKILL.md` — improved description, added bilingual output example
+- All skill descriptions enhanced with Korean/English trigger keywords for better auto-invocation
+- `plugin.json` / `marketplace.json` — version bumped to 1.3.1
+
+### Fixed
+- Init skill skipping steps 4-8 and creating `config.json` instead of `.config`
+- Init skill `disable-model-invocation` set to `false` for autocomplete support
+- `/clear` limitation documented in FAQ (README.md, README.ko.md)
+
 ## [1.2.0] - 2026-02-27
 
 ### Added
