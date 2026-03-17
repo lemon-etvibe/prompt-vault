@@ -2,7 +2,7 @@
 
 # prompt-vault
 
-[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
+[![Version](https://img.shields.io/badge/version-1.3.4-blue.svg)](https://github.com/lemon-etvibe/prompt-vault)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 바이브 코더를 위한 회고 저널. AI 세션을 페이즈별로 기록하고, 내 프롬프트 패턴을 돌아보며, 매 인터랙션을 통해 스킬을 성장시키세요.

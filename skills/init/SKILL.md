@@ -8,6 +8,17 @@ argument-hint: [en|ko]
 Set up the prompt-vault logging environment for a project.
 This skill collects user preferences, then delegates all file creation to `init.sh`.
 
+## Step 0: Locate the plugin root
+
+Find the `init.sh` script path:
+
+```bash
+PLUGIN_ROOT=$(find ~/.claude/plugins -name "init.sh" -path "*/prompt-vault/scripts/*" 2>/dev/null | head -1 | sed 's|/scripts/init.sh$||')
+echo "PLUGIN_ROOT=${PLUGIN_ROOT}"
+```
+
+**If `PLUGIN_ROOT` is empty, stop and tell the user the plugin is not installed properly.**
+
 ## Step 1: Language
 
 Check `$ARGUMENTS`:
@@ -42,7 +53,7 @@ curl -s -X POST http://colormind.io/api/ -d '{"model":"default"}'
 # Convert RGB → HEX array
 
 # Fallback: random from curated palettes
-jq -r ".[$RANDOM_INDEX]" "${CLAUDE_PLUGIN_ROOT}/data/palettes.json"
+jq -r ".[$RANDOM_INDEX]" "${PLUGIN_ROOT}/data/palettes.json"
 ```
 
 ## Step 5: Auto-Logging
@@ -59,7 +70,7 @@ If no → `auto_log=false`
 **MUST execute this command — this is the core of initialization:**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/init.sh" \
+bash "${PLUGIN_ROOT}/scripts/init.sh" \
   "$PWD" \
   "<LANG>" \
   "<MODEL_ID>" \

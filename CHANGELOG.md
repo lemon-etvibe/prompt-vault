@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2026-03-17
+
+### Fixed
+- `${CLAUDE_PLUGIN_ROOT}` not resolved in skill context, causing scripts to not execute
+- Report/init skills now use `find` to auto-locate plugin scripts instead of relying on env var
+- Added Step 0 (plugin root discovery) to both report and init skills
+
 ## [1.3.3] - 2026-03-17
 
 ### Changed
