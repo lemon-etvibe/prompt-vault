@@ -5,78 +5,60 @@ disable-model-invocation: false
 argument-hint: [summary|detail|all|custom]
 ---
 
-Parse phase log data and generate visualized HTML reports.
+Generate HTML reports from phase logs using the shell script.
 
-## Arguments
-
-- `summary` — Generate summary dashboard only
-- `detail` — Generate detailed chat log view only
-- `all` (default) — Generate both
-- `custom` — Claude generates a custom report based on user request
+**CRITICAL: NEVER generate HTML yourself. ALWAYS run the shell script below.**
 
 ## Procedure
 
-### Standard Reports (summary / detail / all)
+### Step 1: Run the script
 
-1. Execute `${CLAUDE_PLUGIN_ROOT}/scripts/generate-report.sh`:
+**MUST execute this command — do NOT write HTML manually:**
 
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-report.sh" [summary|detail|all]
-   ```
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-report.sh" "${1:-all}"
+```
 
-2. Inform the user of generated file paths:
-   - `.local/logs/report-summary.html` — Project summary dashboard
-   - `.local/logs/report-detail.html` — Phase-by-phase detailed chat log
+Arguments: `summary`, `detail`, `all` (default), or omit for `all`.
 
-3. Guide how to open in browser:
-   ```bash
-   open .local/logs/report-summary.html   # macOS
-   xdg-open .local/logs/report-detail.html # Linux
-   ```
+The script generates exactly two files:
+- `.local/logs/report-summary.html` — Project summary dashboard
+- `.local/logs/report-detail.html` — Phase-by-phase detailed chat log
 
-### Custom Reports (custom)
+**Do NOT create `report.html`, `report_detail.html`, or any other filename.**
 
-1. First generate standard reports (same procedure as above).
-2. Confirm the user's additional requests (e.g., "add retrospective section", "apply specific palette").
-3. Read the generated HTML files and modify/enhance per user request.
-4. Save modified files and inform the user of paths.
+### Step 2: Verify output
 
-## Data Sources
+```bash
+ls -la .local/logs/report-summary.html .local/logs/report-detail.html
+```
 
-Reference the following data when generating reports:
+**If either file is missing, report the error — do NOT generate HTML as fallback.**
 
-- **Project metadata**: `.local/logs/.config` — `project_name`, `project_description`, `palette`
-- **Phase index**: `.local/logs/_index.md` — phase list table
-- **Phase details**: `.local/logs/phase-*.md` — prompts, actions, results, decisions, next steps per phase
-- **Additional context** (if available): `package.json`, `CLAUDE.md`
+### Step 3: Report to user
+
+Read `lang` from `.local/logs/.config` (default: `"ko"`).
+
+- en: `✅ Report generated!`
+- ko: `✅ 리포트 생성 완료!`
+
+Then show file paths and open command:
+```
+- Summary: .local/logs/report-summary.html
+- Detail: .local/logs/report-detail.html
+
+open .local/logs/report-summary.html
+```
+
+## Custom Reports (`custom` argument only)
+
+1. Run the standard script first (Step 1 above).
+2. Ask the user what they want to customize.
+3. Read the **generated** HTML and modify per request.
+4. Save and inform paths.
 
 ## Error Handling
 
-- `.local/logs/` does not exist → Guide user to run `/prompt-vault:init`
-- `_index.md` missing → Generate empty report with warning message
-- `phase-*.md` non-standard format → Display parseable parts only, leave rest empty
-- `.config` missing → Use defaults (project directory name, default palette)
-
-## Language
-
-Report language follows the `lang` setting in `.local/logs/.config`. English users get English labels, Korean users get Korean labels automatically. The `generate-report.sh` script reads the lang setting and sources the appropriate label file (`labels.en.sh` or `labels.ko.sh`).
-
-## Example
-
-**Input**: `/prompt-vault:report`
-**Output** (en):
-```
-✅ Report generated!
-- Summary: .local/logs/report-summary.html
-- Detail: .local/logs/report-detail.html
-
-open .local/logs/report-summary.html
-```
-**Output** (ko):
-```
-✅ 리포트 생성 완료!
-- Summary: .local/logs/report-summary.html
-- Detail: .local/logs/report-detail.html
-
-open .local/logs/report-summary.html
-```
+- `.local/logs/` not found → Guide user to run `/prompt-vault:init`
+- Script fails → Show error output, do NOT attempt manual HTML generation
+- `.config` missing → Script uses defaults automatically
