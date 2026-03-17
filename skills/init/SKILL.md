@@ -6,118 +6,94 @@ argument-hint: [en|ko]
 ---
 
 Set up the prompt-vault logging environment for a project.
+This skill collects user preferences, then delegates all file creation to `init.sh`.
 
-## Language Detection (Step 1 — ALWAYS run this first, no exceptions)
+## Step 1: Language
 
-**IMPORTANT: Always ask the user to choose a language before doing anything else, even if `.local/logs/` already exists.**
+Check `$ARGUMENTS`:
+- `en` → `LANG=en`, skip asking
+- `ko` → `LANG=ko`, skip asking
+- empty → ask:
+  ```
+  Choose language / 언어 선택:
+  [1] English (default)  [2] 한국어
+  ```
 
-1. Check `$ARGUMENTS`:
-   - If `$ARGUMENTS` is `en` → set `LANG_CODE="en"`, skip asking
-   - If `$ARGUMENTS` is `ko` → set `LANG_CODE="ko"`, skip asking
-   - If `$ARGUMENTS` is empty → **ask the user NOW**:
-     ```
-     Choose language / 언어 선택:
-     [1] English (default — recommended for shared projects)
-     [2] 한국어
+## Step 2: Model & Context
 
-     Enter 1 or 2 (default: 1):
-     ```
-   - User selects 1 or presses Enter → `LANG_CODE="en"`
-   - User selects 2 → `LANG_CODE="ko"`
+Ask which model/plan is in use:
 
-Save `LANG_CODE` — it will be written to config in step 7.
+| Model | context_tokens | warn_bytes |
+|-------|---------------|------------|
+| Opus 4.6 / Sonnet 4.5 / Haiku 4.5 (200K) | 200000 | 640000 |
+| Extended (1M) | 1000000 | 3200000 |
 
-## Procedure
+## Step 3: Project Metadata
 
-2. Create `.local/logs/` directory
-3. Add `.local/` to `.gitignore` (skip if already present)
-   — WHY: Logs are personal work records and should not be committed to git
-4. Initialize `.local/logs/_index.md` (template-based)
+- `project_name`: default = current directory name
+- `project_description`: one-line description (default: empty)
 
-   ```markdown
-   # Phase Log Index
+## Step 4: Palette
 
-   | # | Title | Status | Date | Summary |
-   |---|-------|--------|------|---------|
-   ```
+Generate a 5-color palette:
+```bash
+# Primary: colormind.io API (free, no key)
+curl -s -X POST http://colormind.io/api/ -d '{"model":"default"}'
+# Convert RGB → HEX array
 
-5. Add Phase Logging Protocol section to `CLAUDE.md` (skip if already present)
-   — WHY: So Claude automatically follows the logging protocol
-   → Reference content from ${CLAUDE_PLUGIN_ROOT}/templates/claude-md-snippet.md
-6. Ask user about model/plan and set context threshold in `.local/logs/.config`:
+# Fallback: random from curated palettes
+jq -r ".[$RANDOM_INDEX]" "${CLAUDE_PLUGIN_ROOT}/data/palettes.json"
+```
 
-   | Model | Context | 80% threshold (est. bytes) |
-   |-------|---------|---------------------------|
-   | Opus 4.6 (200K) | 200K tokens | ~640,000 bytes |
-   | Sonnet 4.5 (200K) | 200K tokens | ~640,000 bytes |
-   | Haiku 4.5 (200K) | 200K tokens | ~640,000 bytes |
-   | Extended (1M) | 1M tokens | ~3,200,000 bytes |
+## Step 5: Auto-Logging
 
-7. Set up project metadata and report palette:
-   - `project_name`: Project name (default: current directory name)
-   - `project_description`: One-line project description (default: empty)
-   - `lang`: Language code from step 1 (`"en"` or `"ko"`)
-   - `palette`: 5-color palette array — auto-generate via colormind.io API, fallback to `${CLAUDE_PLUGIN_ROOT}/data/palettes.json` random selection
+Ask:
+- en: "Enable auto-logging? (Turn-count based automatic recording via Stop hook)"
+- ko: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
 
-   Palette generation methods:
-   ```bash
-   # Primary: colormind.io API call (free, no key required)
-   curl -s -X POST http://colormind.io/api/ -d '{"model":"default"}'
-   # Convert RGB array from response to HEX and store in palette field
+If yes → `auto_log=true`, `turn_threshold=3`
+If no → `auto_log=false`
 
-   # Fallback: random selection from curated palettes
-   jq -r '.['"$RANDOM_INDEX"']' "${CLAUDE_PLUGIN_ROOT}/data/palettes.json"
-   ```
+## Step 6: Run init.sh
 
-   Palette role guide:
-   - `palette[0]`: Primary — headers, main buttons, titles
-   - `palette[1]`: Secondary — timeline, badges, links
-   - `palette[2]`: Accent — highlights, hover, emphasis
-   - `palette[3]`: Surface — card backgrounds, dividers
-   - `palette[4]`: Muted — subtext, inactive states
+**MUST execute this command — this is the core of initialization:**
 
-   Default config example:
-   ```json
-   {
-     "lang": "en",
-     "model": "claude-opus-4-6",
-     "context_window_tokens": 200000,
-     "warn_percent": 80,
-     "warn_bytes": 640000,
-     "project_name": "My Project",
-     "project_description": "",
-     "palette": ["#264653", "#2A9D8F", "#E9C46A", "#F4A261", "#E76F51"]
-   }
-   ```
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/init.sh" \
+  "$PWD" \
+  "<LANG>" \
+  "<MODEL_ID>" \
+  "<CONTEXT_TOKENS>" \
+  "<WARN_BYTES>" \
+  "<PROJECT_NAME>" \
+  "<PROJECT_DESC>" \
+  '<PALETTE_JSON>' \
+  "<AUTO_LOG_ENABLED>" \
+  "<TURN_THRESHOLD>"
+```
 
-8. Configure auto-logging:
-   - en: "Enable auto-logging? (Turn-count based automatic recording via Stop hook)"
-   - ko: "자동 로깅을 활성화할까요? (Stop 훅에서 턴 수 기반 자동 기록)"
-   - If yes: MERGE `autoLog` into existing `.config` (do NOT overwrite other fields)
-     — WHY: To avoid overwriting existing settings (palette, warn_bytes, etc.)
-     ```json
-     {
-       "autoLog": {
-         "enabled": true,
-         "turnThreshold": 3
-       }
-     }
-     ```
-   - If no: skip (autoLog key absent = disabled by default)
-   - Note: Read existing `.config` first, merge `autoLog` key, then write back
+The script creates ALL required files:
+- `.local/logs/` directory
+- `.local/logs/.config` (NOT config.json — the file MUST be named `.config`)
+- `.local/logs/_index.md`
+- `.gitignore` entry
+- `CLAUDE.md` logging protocol section
 
-9. Output initialization complete message — include generated palette preview and restart guide:
+## Step 7: Verify & Report
 
-   Based on chosen language:
-   - en:
-     ```
-     ✅ Initialized! Phase Logging Protocol added to CLAUDE.md.
-     💡 Restart Claude to apply: /exit → claude --continue
-     ```
-   - ko:
-     ```
-     ✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.
-     💡 Claude를 재시작하면 프로토콜이 자동 적용됩니다: /exit → claude --continue
-     ```
+After init.sh completes, verify these files exist:
+```bash
+ls -la .local/logs/.config .local/logs/_index.md
+grep "Phase Logging Protocol" CLAUDE.md
+```
 
-   Note: Use `--continue` flag to resume the session with CLAUDE.md changes applied.
+**If any file is missing, report the error — do NOT silently skip.**
+
+Output:
+- en: `✅ Initialized! Phase Logging Protocol added to CLAUDE.md.`
+- ko: `✅ 초기화 완료! CLAUDE.md에 로깅 프로토콜이 추가되었습니다.`
+
+Then:
+```
+💡 Restart Claude to apply: /exit → claude --continue
+```
