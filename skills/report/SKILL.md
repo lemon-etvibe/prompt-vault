@@ -11,12 +11,23 @@ Generate HTML reports from phase logs using the shell script.
 
 ## Procedure
 
+### Step 0: Locate the plugin root
+
+Find the `generate-report.sh` script path:
+
+```bash
+SCRIPT_PATH=$(find ~/.claude/plugins -name "generate-report.sh" -path "*/prompt-vault/*" 2>/dev/null | head -1)
+echo "SCRIPT_PATH=${SCRIPT_PATH}"
+```
+
+**If `SCRIPT_PATH` is empty, stop and tell the user the plugin is not installed properly.**
+
 ### Step 1: Run the script
 
 **MUST execute this command — do NOT write HTML manually:**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-report.sh" "${1:-all}"
+bash "${SCRIPT_PATH}" "${1:-all}"
 ```
 
 Arguments: `summary`, `detail`, `all` (default), or omit for `all`.
@@ -60,5 +71,6 @@ open .local/logs/report-summary.html
 ## Error Handling
 
 - `.local/logs/` not found → Guide user to run `/prompt-vault:init`
+- Script not found → Show the find command output and guide reinstall
 - Script fails → Show error output, do NOT attempt manual HTML generation
 - `.config` missing → Script uses defaults automatically
