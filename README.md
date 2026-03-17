@@ -372,6 +372,10 @@ vim .local/logs/.config
 
 **A**: Yes, logs are very useful for systematically managing project history regardless of compaction. You can query progress anytime with `/prompt-vault:status` and search past decisions with `grep`.
 
+### Q8. Does auto-logging work with `/clear`?
+
+**A**: No. `/clear` is a built-in Claude Code command that bypasses the hook system entirely. There is no pre-clear hook event available. **Run `/prompt-vault:log` before using `/clear`** to save your current work. If auto-logging is enabled, the Stop hook will have already saved progress after your last interaction, but any work since the last Stop hook trigger will be lost.
+
 ## Troubleshooting
 
 ### Permission Errors
