@@ -3,9 +3,10 @@ description: "Initialize prompt-vault logging environment. Use when starting a n
 argument-hint: [en|ko]
 ---
 
-Run the `/prompt-vault:init` skill to set up the logging environment.
+**You MUST use the Skill tool to invoke `prompt-vault:init` with args `{argument}`.**
 
-Pass language as argument to skip the language selection prompt:
-- `/prompt-vault:init en` — initialize with English
-- `/prompt-vault:init ko` — initialize with Korean (한국어)
-- `/prompt-vault:init` — interactive language selection
+This skill:
+- Collects user preferences (language, model, project name, palette, auto-logging)
+- Runs `init.sh` to create `.local/logs/`, `.config`, `_index.md`, `.gitignore`, `CLAUDE.md` entries
+
+Do NOT create these files manually — always delegate to the skill.
