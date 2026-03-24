@@ -60,5 +60,5 @@ claude --plugin-dir /path/to/prompt-vault
 ```
 
 ## Current Status
-- v1.1.0: HTML reporting feature added
+- v1.3.5: Enforce Skill tool delegation in commands, multilingual support, auto-logging, HTML reports
 - GitHub: https://github.com/lemon-etvibe/prompt-vault
