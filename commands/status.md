@@ -1,5 +1,6 @@
 ---
 description: "Show phase progress summary. Use when the user asks '진행 상황', '현재 상태', 'status', or 'progress'."
+allowed-tools: ["Skill"]
 ---
 
 **You MUST use the Skill tool to invoke `prompt-vault:status`.**
