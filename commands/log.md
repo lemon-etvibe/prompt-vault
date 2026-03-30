@@ -1,6 +1,7 @@
 ---
 description: "Record completed work as a phase log. Use when a task is done, the user says '로그', '기록', 'log', or before ending a session."
 argument-hint: [phase-title]
+allowed-tools: ["Skill"]
 ---
 
 **You MUST use the Skill tool to invoke `prompt-vault:log` with args `{argument}` (phase title).**
