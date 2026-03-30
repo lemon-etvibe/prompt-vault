@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] - 2026-03-30
+
+### Changed
+- `commands/*.md` — add `allowed-tools: ["Skill"]` frontmatter for system-level tool restriction
+- Commands now enforce Skill-only access at the Claude Code platform level, not just via text instructions
+
 ## [1.3.5] - 2026-03-17
 
 ### Changed
